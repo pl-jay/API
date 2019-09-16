@@ -61,6 +61,14 @@ api.add_resource(resources.AllTripStatus, '/trip_status')
 api.add_resource(resources.PickUpLocbyTrip, '/pickuploc/<trip_id>')
 api.add_resource(resources.WaypointbyTrip, '/waypoint/<trip_id>')
 api.add_resource(resources.TripbyId, '/trip/<trip_id>')
+api.add_resource(resources.TripStatusById, '/trip_status/<trip_id>')
+
+api.add_resource(resources.DriverFeedbackbyId, '/driver_feedback/<driver_id>')
+api.add_resource(resources.PassengerFeedbackbyId, '/passenger_feedback/<ps_id>')
+
+
+
+
 
 #############################################################################################################
 #                                #----------------------------------#                                       #

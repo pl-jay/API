@@ -284,7 +284,7 @@ class TripStatusModel(db.Model):
 	updated 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
 
 	tripplan = relationship("TripPlanModel", back_populates='tripstatus')
-	vehicle = relationship("VehicleModel", back_populates='tripstatus')
+	vehicle  = relationship("VehicleModel", back_populates='tripstatus')
 
 	def save_to_db(self):
 		db.session.add(self)
@@ -296,7 +296,7 @@ class TripStatusModel(db.Model):
 
 	@classmethod
 	def find_by_tripId(cls, tripId):
-    		return cls.query.filter_by(trip_id = tripId).first()
+    		return TripStatusModel.query.filter_by(trip_id = tripId).all()
 
 	@classmethod
 	def delete_all(cls):
@@ -332,11 +332,11 @@ class DriverFeedbackModel(db.Model):
 
 	@classmethod
 	def return_all(cls):
-		return jsonify(PassengerModel.query.all())
+		return PassengerModel.query.all()
 
 	@classmethod
 	def find_by_driverId(cls, driverId):
-    		return cls.query.filter_by(driver_id = driverId).first()
+    		return cls.query.filter_by(driver_id = driverId).all()
 
 	@classmethod
 	def delete_all(cls):
@@ -370,11 +370,11 @@ class PassengerFeedbackModel(db.Model):
 
 	@classmethod
 	def return_all(cls):
-		return jsonify(PassengerFeedbackModel.query.all())
+		return PassengerFeedbackModel.query.all()
 
 	@classmethod
 	def find_by_passengerId(cls, ps_id):
-    		return cls.query.filter_by(passenger_id = ps_id).first()
+    		return cls.query.filter_by(passenger_id = ps_id).all()
 
 	@classmethod
 	def delete_all(cls):

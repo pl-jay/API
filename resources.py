@@ -31,7 +31,9 @@ users_schema              = UserSchema(many=True)
 class UserRegistration(Resource):
     def post(self):
         data = request.get_json(force=True)
+        
         print(data)
+
         if not data:
             return {'message':'No input data provided'}, 400
         
@@ -427,7 +429,11 @@ class AllTripStatus(Resource):
         res = trip_status_schema.dump(d1)
         return { 'trip_status': res}
 
-
+class TripStatusById(Resource):
+    def get(self, trip_id):
+        d1 = TripStatusModel.find_by_tripId(trip_id)
+        res = trip_status_schema.dump(d1)
+        return { 'trip_status': res}
 
 #############################################################################################################
 #                                        #-------------------------------#                                  #
