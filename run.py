@@ -9,32 +9,37 @@ from flask_restful import Resource
 
 app = Flask(__name__)
 
+api = Api(app)
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///appDB.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'some-secret-string'
-app.config['JWT_SECRET_KEY'] = 'jwt-secret-string'
-app.config['JWT_BLACKLIST_ENABLED'] = True
-app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False
+
 
 CORS(app)
 db  = SQLAlchemy(app)
-jwt = JWTManager(app)
 
-db.create_all()
-
-@jwt.token_in_blacklist_loader
-def check_if_token_in_blacklist(decrypted_token):
-    jti = decrypted_token['jti']
-    return RevokedTokenModel.is_jti_blacklisted(jti)
 
 @app.before_first_request
 def create_tables():
     db.create_all()
 
-api = Api(app)
 
-import models, resources
+app.config['JWT_SECRET_KEY'] = 'jwt-secret-string'
+
+jwt = JWTManager(app)
+
+app.config['JWT_BLACKLIST_ENABLED'] = True
+app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False
+
+@jwt.token_in_blacklist_loader
+def check_if_token_in_blacklist(decrypted_token):
+    jti = decrypted_token['jti']
+    return models.RevokedTokenModel.is_jti_blacklisted(jti)
+
+
+import resources
 
 
 #############################################################################################################
@@ -68,6 +73,11 @@ api.add_resource(resources.PassengerFeedbackbyId, '/passenger_feedback/<ps_id>')
 
 
 
+# TripPlans API #
+
+api.add_resource(resources.SendTripPlanToOwner, '/tripsforowner/<ow_id>')
+
+
 
 
 #############################################################################################################
@@ -84,9 +94,10 @@ api.add_resource(resources.OwnerRegistration, '/reg_owner')
 
 
 # 
-# api.add_resource(User.UserLogoutAccess, '/logout/access')
+api.add_resource(resources.UserLogoutAccess, '/logout/access')
 # api.add_resource(User.UserLogoutRefresh, '/logout/refresh')
 # api.add_resource(User.TokenRefresh, '/token/refresh')
 
+api.add_resource(resources.CreateTripPlan, '/createTrip')
 
 

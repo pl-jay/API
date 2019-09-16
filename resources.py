@@ -1,3 +1,4 @@
+import json
 from flask_restful import Resource, reqparse,inputs
 from flask import request
 from flask_jwt_extended import (
@@ -17,7 +18,17 @@ from schemas import (
     PickupLocationSchema,WaypointsSchema,UserSchema,
     DriverFeedbackSchema,PassengerFeedbackSchema)
 
-
+users_schema              = UserSchema(many=True)
+passenger_schema          = PassengerSchema(many=True)
+owner_schema              = OwnerSchema(many=True)
+driver_schema             = DriverSchema(many=True)
+vehicle_schema            = VehicleSchema(many=True)
+trips_plan_schema          = TripPlanSchema(many=True)
+trip_status_schema        = TripStatusSchema(many=True)
+pickuploc_schema          = PickupLocationSchema(many=True)
+waypoints_schema          = WaypointsSchema(many=True)
+driver_feedback_schema    = DriverFeedbackSchema(many=True)
+passenger_feedback_schema = PassengerFeedbackSchema(many=True)
 
 
 #############################################################################################################
@@ -26,62 +37,74 @@ from schemas import (
 #                                   #------------------------#                                              #  
 #############################################################################################################
 
-users_schema              = UserSchema(many=True)
+user_schema              = UserSchema()
 
 class UserRegistration(Resource):
     def post(self):
         data = request.get_json(force=True)
         
-        print(data)
-
         if not data:
             return {'message':'No input data provided'}, 400
-        
-        data = users_schema.load(data)
-        
-        #  if errors:
-        #      return errors, 442
+
 
         if UserModel.find_by_username(data['username']):
             return {'message': 'User {} already exists'.format(data['username'])}
+
+        print('passed')
+        print(UserModel.generate_hash(data['password']))
         
         new_user = UserModel(
             username = data['username'],
             password = UserModel.generate_hash(data['password']),
             user_role = data['user_role']
         )
-        
+
         try:
             new_user.save_to_db()
-            genr_access_token  = create_access_token(identity = data['username'])
-            genr_refresh_token = create_refresh_token(identity = data['username'])
-            return {
-                'message': 'User {} was created'.format(data['username'])
-                }
+            return { 'message': 'success' }
 
-        except:
-            return {'message': 'Something went wrong'}, 500
+        except Exception as e:
+            return {'message': 'Something went wrong','error': e}, 500
 
 class UserLogin(Resource):
     def post(self):
-        data = request.get_json(force=True)
         
-        current_user = UserModel.find_by_username(data['username'])
+        data = request.get_json(force=True)
+
+        username = data['username']
+        
+        current_user = UserModel.find_by_username(username)
 
         if not current_user:
-            return {'message': 'User {} doesn\'t exist'.format(data['username'])}
+            return {'message': 'User {} doesn\'t exist'.format(username)}
+
+        user_role = UserModel.get_user_role(username)
         
+        if user_role == 'passenger':
+            userId = PassengerModel.get_passengerId(username)
+            print('passenger')
+        if user_role == 'driver':
+            userId = DriverModel.get_driverId(username)
+            print('driver')
+        if user_role == 'owner':
+            userId = OwnerModel.get_ownerId(username)
+            print('owner')       
+
         if UserModel.verify_hash(data['password'], current_user.password):
-            genr_access_token  = create_access_token(identity = data['username'])
-            genr_refresh_token = create_refresh_token(identity = data['username'])
+
+            genr_access_token  = create_access_token(identity = username)
+            genr_refresh_token = create_refresh_token(identity = username)
             
-            UserModel.update_table(data['username'], genr_access_token, genr_refresh_token)
+            UserModel.update_table(username, genr_access_token, genr_refresh_token)
             
             return {
                 'message': 'Logged in as {}'.format(current_user.username),
                 'access_token': genr_access_token,
-                'refresh_token': genr_refresh_token
+                'refresh_token': genr_refresh_token,
+                'user_id': userId
                 }
+        else:
+            return {'message':'wrong password'}
             
 class UserLogoutAccess(Resource):
     @jwt_required
@@ -115,9 +138,7 @@ class AllUsers(Resource):
     
     def get(self):
         d1  = UserModel().all()
-        print(d1)
         res = users_schema.dump(d1)
-        print(res)
         return { "users": res}
 
     def delete(self):
@@ -129,7 +150,7 @@ class AllUsers(Resource):
 #                                        #------------------------#                                         #
 #############################################################################################################
 
-passenger_schema          = PassengerSchema(many=True)
+
 
 class PassengerRegistration(Resource):
     def post(self):
@@ -138,7 +159,7 @@ class PassengerRegistration(Resource):
         if not data:
             return {'message':'No data provided'}, 400
 
-        data = passenger_schema.load(data)
+        #data = passenger_schema.load(data)
         
         if PassengerModel.find_by_email(data['passenger_email']):
             return {'message': 'User {} already exists'.format(data['passenger_name'])}
@@ -170,7 +191,7 @@ class AllPassengers(Resource):
 #                                            #------------------------#                                     #
 #############################################################################################################
 
-owner_schema              = OwnerSchema(many=True)
+
 
 class OwnerRegistration(Resource):
     def post(self):
@@ -181,10 +202,6 @@ class OwnerRegistration(Resource):
         if not data:
             return {'message':'No data provided'}, 400
 
-        data = owner_schema.load(data)
-        
-        print(data)
-        
         if OwnerModel.find_by_nic(data['owner_nic']):
             return {'message': 'Owner {} already exists'.format(data['owner_nic'])}
 
@@ -216,13 +233,18 @@ class AllOwners(Resource):
         res = owner_schema.dump(d1)
         return { 'owners': res}
 
+class AreaforOwner(Resource):
+    def get(self, ow_id):
+        d1 = OwnerModel().get_area(ow_id)
+        return {'area': d1}
+
 #############################################################################################################
 #                                        #------------------------#                                         #
 #                                        #     Driver Resource    #                                         #
 #                                        #------------------------#                                         #
 #############################################################################################################
 
-driver_schema             = DriverSchema(many=True)
+
 
 class DriverRegistration(Resource):
     def post(self):
@@ -233,11 +255,9 @@ class DriverRegistration(Resource):
         if not data:
             return {'message':'No data provided'}, 400
 
-        data = owner_schema.load(data)
         
-        print(data)
         
-        if OwnerModel.find_by_email(data['driver_email']):
+        if DriverModel.find_by_email(data['driver_email']):
             return {'message': 'Driver {} already exists'.format(data['driver_email'])}
 
         new_driver = DriverModel(
@@ -275,7 +295,7 @@ class AllDrivers(Resource):
 #                                        #------------------------#                                         #
 #############################################################################################################
 
-vehicle_schema            = VehicleSchema(many=True)
+
 
 class VehiclRegistration(Resource):
     def post(self):
@@ -286,11 +306,8 @@ class VehiclRegistration(Resource):
         if not data:
             return {'message':'No data provided'}, 400
 
-        data = vehicle_schema.load(data)
         
-        print(data)
-        
-        if OwnerModel.find_by_vehicle_reg_number(data['vehicle_reg_number']):
+        if VehicleModel.find_by_vehicle_reg_number(data['vehicle_reg_number']):
             return {'message': 'Vehicle {} already exists'.format(data['vehicle_reg_number'])}
 
         new_vehicle = VehicleModel(
@@ -326,41 +343,30 @@ class AllVehicles(Resource):
 #                                        #------------------------#                                         #
 #############################################################################################################
 
-trip_plan_schema          = TripPlanSchema(many=True)
+trip_plan_schema          = TripPlanSchema()
 
 class CreateTripPlan(Resource):
     def post(self):
         data = request.get_json(force=True)
-        
-        print(data)
 
         if not data:
             return {'message':'No data provided'}, 400
-
-        data = trip_plan_schema.load(data)
-        
-        print(data)
-        
-        # if OwnerModel.find_by_trip_id(data['trip_id']):
-        #     return {'message': 'Trip Plan {} already exists'.format(data['trip_id'])}
 
         new_trip = TripPlanModel(
             vehicle_type  = data['vehicle_type'],
             no_of_passengers   = data['no_of_passengers'],
             date_from    = data['date_from'],
             date_to  = data['date_to'],
-            pickup_loc      = data['pickup_loc_lat'],
+            pickup_loc      = data['pickup_loc'],
             ac_condition = data['ac_condition'],
             destination = data['destination'],
             passenger_id = data['passenger_id'],
             description = data['description']
         )
         
-        print(new_trip)
-
         try:
             new_trip.save_to_db()
-            return {'message': 'Trip Plan {} created for here'.format(data['destination'])}
+            return {'message': 'Trip Plan created for here {}'.format(data['destination'])}
         except Exception as e:
             return {'message': 'Something went wrong', 'error': e, 'data': new_trip}, 500
 
@@ -378,39 +384,39 @@ class TripbyId(Resource):
         res = trip_plan_schema.dump(d1)
         return {'trip_plan': res}
 
+class SendTripPlanToOwner(Resource):
+    def get(self, ow_id):
+        area = OwnerModel().get_area(ow_id)
+        data = TripPlanModel().trip_detailsbyArea(area)
+
+        res = trips_plan_schema.dump(data)
+        
+        return {'trip_details': res}
+
 
 #############################################################################################################
 #                                           #-------------------------#                                     #
-#                                           #     TripStatus Resource #                                     #
+#                                           #   TripStatus Resource   #                                     #
 #                                           #-------------------------#                                     #    
 #############################################################################################################
 
-trip_status_schema        = TripStatusSchema(many=True)
+
 
 class CreateTripStatus(Resource):
     def post(self):
         data = request.get_json(force=True)
         
-        print(data)
-
         if not data:
             return {'message':'No data provided'}, 400
 
-        data = trip_status_schema.load(data)
-        
-        print(data)
-        
-        # if OwnerModel.find_by_trip_id(data['trip_id']):
-        #     return {'message': 'Trip Plan {} already exists'.format(data['trip_id'])}
-
         new_trip_status = TripStatusModel(
-            trip_id  = data['trip_id'],
-            trip_budget   = data['trip_budget'],
-            assigned_driver    = data['assigned_driver'],
+            trip_id                 = data['trip_id'],
+            trip_budget             = data['trip_budget'],
+            assigned_driver         = data['assigned_driver'],
             is_confirmed_passenger  = data['is_confirmed_passenger'],
-            is_confirmed_driver      = data['is_confirmed_driver'],
-            trip_started         = data['trip_started'],
-            vehicle_no = data['vehicle_no']
+            is_confirmed_driver     = data['is_confirmed_driver'],
+            trip_started            = data['trip_started'],
+            vehicle_no              = data['vehicle_no']
         )
         
         print(new_trip_status)
@@ -435,37 +441,31 @@ class TripStatusById(Resource):
         res = trip_status_schema.dump(d1)
         return { 'trip_status': res}
 
+# class UpdateTripStatus(Resource):
+#     def post(self):
+
+
+
+
 #############################################################################################################
 #                                        #-------------------------------#                                  #
 #                                        #     PickupLocations Resource  #                                  #
 #                                        #-------------------------------#                                  #    
 #############################################################################################################
 
-pickuploc_schema          = PickupLocationSchema(many=True)
 
 class AddPickupLocations(Resource):
     def post(self):
         data = request.get_json(force=True)
-        
-        print(data)
 
         if not data:
             return {'message':'No data provided'}, 400
-
-        data = pickuploc_schema.load(data)
-        
-        print(data)
-        
-        # if OwnerModel.find_by_trip_id(data['trip_id']):
-        #     return {'message': 'Trip Plan {} already exists'.format(data['trip_id'])}
 
         new_pickuploc = PickupLocationsModel(
             trip_id  = data['trip_id'],
             pickup_loc   = data['pickup_loc']
         )
         
-        print(new_pickuploc)
-
         try:
             new_pickuploc.save_to_db()
             return {'message': 'PickupLocations {} created for '.format(data['trip_id'])}
@@ -485,23 +485,14 @@ class PickUpLocbyTrip(Resource):
 #                                        #-------------------------#                                        #
 #############################################################################################################
 
-waypoints_schema          = WaypointsSchema(many=True)
+
 
 class AddWaypoints(Resource):
     def post(self):
         data = request.get_json(force=True)
         
-        print(data)
-
         if not data:
             return {'message':'No data provided'}, 400
-
-        data = waypoints_schema.load(data)
-        
-        print(data)
-        
-        # if OwnerModel.find_by_trip_id(data['trip_id']):
-        #     return {'message': 'Trip Plan {} already exists'.format(data['trip_id'])}
 
         new_waypoint = WaypointsModel(
             trip_id  = data['trip_id'],
@@ -530,23 +521,14 @@ class WaypointbyTrip(Resource):
 #                                #-------------------------------#                                          #
 #############################################################################################################
 
-driver_feedback_schema    = DriverFeedbackSchema(many=True)
+
 
 class CreateDriverFeedback(Resource):
     def post(self):
         data = request.get_json(force=True)
         
-        print(data)
-
         if not data:
             return {'message':'No data provided'}, 400
-
-        data = driver_feedback_schema.load(data)
-        
-        print(data)
-        
-        # if OwnerModel.find_by_trip_id(data['trip_id']):
-        #     return {'message': 'Trip Plan {} already exists'.format(data['trip_id'])}
 
         new_dr_feedback = DriverFeedbackModel(
             driver_id  = data['driver_id'],
@@ -577,24 +559,17 @@ class DriverFeedbackbyId(Resource):
 #                                #----------------------------------#                                       #
 #############################################################################################################
 
-passenger_feedback_schema = PassengerFeedbackSchema(many=True)
+
 
 class CreatePassengerFeedback(Resource):
     def post(self):
         data = request.get_json(force=True)
         
-        print(data)
 
         if not data:
             return {'message':'No data provided'}, 400
 
-        data = passenger_feedback_schema.load(data)
         
-        print(data)
-        
-        # if OwnerModel.find_by_trip_id(data['trip_id']):
-        #     return {'message': 'Trip Plan {} already exists'.format(data['trip_id'])}
-
         new_psng_feedback = PassengerFeedbackModel(
             driver_id  = data['driver_id'],
             passenger_id   = data['passenger_id'],

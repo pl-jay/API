@@ -3,6 +3,7 @@ from run import db
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, ForeignKey
 from flask import jsonify
+from passlib.hash import pbkdf2_sha256 as sha256
 
 #############################################################################################################
 #										#----------------#													#
@@ -17,10 +18,10 @@ class PassengerModel(db.Model):
 
 	ps_id 		   = db.Column(db.Integer, primary_key=True, autoincrement=True)
 	ps_token_id    = db.Column(db.String(120),unique=True, nullable=False)
-	passenger_name = db.Column(db.String(50),unique=True, nullable=False)
-	passenger_email= db.Column(db.String(120),unique=True, nullable=False)
-	prof_pic 	   = db.Column(db.String(120),unique=True, nullable=True)
-	is_ontrip 	   = db.Column(db.Boolean, nullable=True, default=False)
+	passenger_name = db.Column(db.String(50), nullable=False)
+	passenger_email= db.Column(db.String(120), nullable=False)
+	prof_pic 	   = db.Column(db.String(120), nullable=True)
+	is_ontrip 	   = db.Column(db.Boolean, default=False)
 	created 	   = db.Column(db.String(50), default=datetime.now(),nullable=True)
 	updated 	   = db.Column(db.String(50), default=datetime.now(),nullable=True)
 
@@ -64,6 +65,10 @@ class PassengerModel(db.Model):
 		except:
 			return {'message': 'Something went wrong'}
 
+	@classmethod
+	def get_passengerId(cls, username):
+		return cls.query.filter_by(passenger_email = username).all()[0].ps_id
+
 #############################################################################################################
 #												#----------------#											#
 #												#   Owner Model  #											#
@@ -79,17 +84,18 @@ class OwnerModel(db.Model):
 	ow_token_id  = db.Column(db.String(120))
 	owner_name   = db.Column(db.String(100), nullable=False)
 	owner_nic	 = db.Column(db.String(20), nullable=False)
-	contact_num  = db.Column(db.Integer, unique=True)
-	address 	 = db.Column(db.String(120), unique=True, nullable=False)
-	area 		 = db.Column(db.String(50), unique=True, nullable=False)
-	service_type = db.Column(db.String(60), unique=True, nullable=False)
-	company_name = db.Column(db.String(100),unique=True, nullable=False)
-	prof_pic     = db.Column(db.String(100),unique=True, nullable=True)
+	contact_num  = db.Column(db.Integer)
+	address 	 = db.Column(db.String(120),nullable=False)
+	area 		 = db.Column(db.String(50), nullable=False)
+	service_type = db.Column(db.String(60), nullable=False)
+	company_name = db.Column(db.String(100), nullable=False)
+	prof_pic     = db.Column(db.String(100), nullable=True)
 	created 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
 	updated 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
 
 	driver 		 = relationship("DriverModel")
 	vehicle		 = relationship("VehicleModel")
+	tripstatus 	 = relationship("TripStatusModel")
 
 	def save_to_db(self):
 		db.session.add(self)
@@ -101,7 +107,13 @@ class OwnerModel(db.Model):
 
 	@classmethod
 	def find_by_nic(cls, nic):
-		return cls.query.filter_by(owner_nic = nic).first()
+		res = cls.query.filter_by(owner_nic = nic).all()
+		
+
+	@classmethod
+	def get_area(cls, owner_id):
+		res = cls.query.filter_by(ow_id = owner_id).all()[0].area
+		return res
 
 	@classmethod
 	def delete_all(cls):
@@ -125,16 +137,16 @@ class DriverModel(db.Model):
 
 	dr_id 		= db.Column(db.Integer, primary_key=True, autoincrement=True)
 	dr_token_id = db.Column(db.String(120))
-	driver_name = db.Column(db.String(100),unique=True, nullable=False)
-	driver_email= db.Column(db.String(100), unique=True, nullable=False)
+	driver_name = db.Column(db.String(100), nullable=False)
+	driver_email= db.Column(db.String(100), nullable=False)
 	owner_id 	= db.Column(db.Integer, ForeignKey('owner.ow_id'))
-	license 	= db.Column(db.String(50),unique=True, nullable=False)
-	driver_nic	= db.Column(db.String(50),unique=True, nullable=False)
-	prof_pic	= db.Column(db.String(50),unique=True, nullable=True)
-	contact_num	= db.Column(db.Integer,unique=True, nullable=False)
+	license 	= db.Column(db.String(50), nullable=False)
+	driver_nic	= db.Column(db.String(50), nullable=False)
+	prof_pic	= db.Column(db.String(50), nullable=True)
+	contact_num	= db.Column(db.Integer, nullable=False)
 	is_ontrip	= db.Column(db.Boolean, default=False)
-	created 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
-	updated 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
+	created 	= db.Column(db.String(50), default=datetime.now(),nullable=True)
+	updated 	= db.Column(db.String(50), default=datetime.now(),nullable=True)
 
 	vehicle 	= relationship("VehicleModel",uselist=False, back_populates='driver')
 	
@@ -164,6 +176,9 @@ class DriverModel(db.Model):
 		except:
 			return {'message': 'Something went wrong'}
 
+	@classmethod
+	def get_driverId(cls, email):
+		return cls.query.filter_by(driver_email = email).all()[0].dr_id
 #############################################################################################################
 #												#----------------#										    #
 #												# Vehicle Model  #											#
@@ -175,14 +190,14 @@ class VehicleModel(db.Model):
 	__tablename__ = 'vehicle'
 
 	v_id 			   = db.Column(db.Integer, primary_key=True, autoincrement=True)
-	vehicle_reg_number = db.Column(db.String(100),unique=True, nullable=False)
+	vehicle_reg_number = db.Column(db.String(100), nullable=False)
 	owner_id		   = db.Column(db.Integer, ForeignKey('owner.ow_id'))
 	driver_id          = db.Column(db.Integer, ForeignKey('driver.dr_id'))
 	ac_condition       = db.Column(db.Boolean)
-	vehicle_brand      = db.Column(db.String(100),unique=True, nullable=False)
-	vehicle_type       = db.Column(db.String(100),unique=True, nullable=False)
+	vehicle_brand      = db.Column(db.String(100), nullable=False)
+	vehicle_type       = db.Column(db.String(100), nullable=False)
 	no_of_passengers   = db.Column(db.Integer)
-	insurance_data     = db.Column(db.String(100),unique=True, nullable=False)
+	insurance_data     = db.Column(db.String(100), nullable=False)
 	is_ontrip          = db.Column(db.Boolean, default=False)
 	created 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
 	updated 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
@@ -223,7 +238,7 @@ class TripPlanModel(db.Model):
 	__tablename__ = 'tripplan'
 
 	trip_id			 = db.Column(db.Integer, primary_key=True, autoincrement=True)
-	vehicle_type     = db.Column(db.String(100),unique=True, nullable=False)
+	vehicle_type     = db.Column(db.String(100), nullable=False)
 	no_of_passengers = db.Column(db.Integer)
 	date_from		 = db.Column(db.String(50))
 	date_to			 = db.Column(db.String(50))
@@ -251,7 +266,7 @@ class TripPlanModel(db.Model):
 
 	@classmethod
 	def find_by_trip_id(cls, trip_id):
-    		return TripPlanModel.query.filter_by(trip_id = trip_id).all()
+    		return TripPlanModel.query.filter_by(trip_id = trip_id).all()	
 
 	@classmethod
 	def delete_all(cls):
@@ -261,6 +276,16 @@ class TripPlanModel(db.Model):
 			return {'message': '{} row(s) deleted'.format(num_rows_deleted)}
 		except:
 			return {'message': 'Something went wrong'}
+
+	@classmethod
+	def trip_detailsbyArea(cls, area):
+		res = TripPlanModel.query.filter_by(pickup_loc = area).all()
+		print('in model')
+		print(res)
+		return res
+
+
+	
 
 #############################################################################################################
 #											#-----------------#												#
@@ -274,6 +299,7 @@ class TripStatusModel(db.Model):
 
 	ts_id					= db.Column(db.Integer, primary_key=True, autoincrement=True)
 	trip_id 				= db.Column(db.Integer, ForeignKey('tripplan.trip_id'))
+	owner_id				= db.Column(db.Integer, ForeignKey('owner.ow_id'))
 	trip_budget				= db.Column(db.Float)
 	assigned_driver			= db.Column(db.Integer, ForeignKey('driver.dr_id'))
 	is_confirmed_passenger	= db.Column(db.Boolean)
@@ -469,15 +495,15 @@ class UserModel(db.Model):
     __tablename__ = 'users'
 
     id 			  = db.Column(db.Integer, primary_key = True)
-    username 	  = db.Column(db.String(120), unique = True, nullable = False)
+    username 	  = db.Column(db.String(120), nullable = False)
     password 	  = db.Column(db.String(120), nullable = False)
     user_role	  = db.Column(db.String(10), nullable = False)
-    access_token  = db.Column(db.String(120), unique = True, nullable = True, default='as' )
-    refresh_token = db.Column(db.String(120), unique = True, nullable = True, default='as' )
+    access_token  = db.Column(db.String(120), nullable = True)
+    refresh_token = db.Column(db.String(120), nullable = True)
 
     def save_to_db(self):
-        db.session.add(self)
-        db.session.commit()
+    	db.session.add(self)
+    	db.session.commit()
     
     @classmethod
     def find_by_username(cls, username):
@@ -524,6 +550,10 @@ class UserModel(db.Model):
     @staticmethod
     def verify_hash(password, hash):
         return sha256.verify(password, hash)
+
+    @classmethod
+    def get_user_role(cls, user_name):
+    	return cls.query.filter_by(username = user_name).all()[0].user_role
 
 #############################################################################################################
 #									#------------------------#												#
