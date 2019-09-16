@@ -18,17 +18,6 @@ from schemas import (
     DriverFeedbackSchema,PassengerFeedbackSchema)
 
 
-users_schema              = UserSchema(many=True)
-passenger_schema          = PassengerSchema(many=True)
-owner_schema              = OwnerSchema(many=True)
-driver_schema             = DriverSchema(many=True)
-vehicle_schema            = VehicleSchema(many=True)
-trip_plan_schema          = TripPlanSchema(many=True)
-waypoints_schema          = WaypointsSchema(many=True)
-pickuploc_schema          = PickupLocationSchema(many=True)
-trip_status_schema        = TripStatusSchema(many=True)
-driver_feedback_schema    = DriverFeedbackSchema(many=True)
-passenger_feedback_schema = PassengerFeedbackSchema(many=True)
 
 
 #############################################################################################################
@@ -36,6 +25,8 @@ passenger_feedback_schema = PassengerFeedbackSchema(many=True)
 #                                   #      UserResources     #                                              #  
 #                                   #------------------------#                                              #  
 #############################################################################################################
+
+users_schema              = UserSchema(many=True)
 
 class UserRegistration(Resource):
     def post(self):
@@ -136,6 +127,7 @@ class AllUsers(Resource):
 #                                        #------------------------#                                         #
 #############################################################################################################
 
+passenger_schema          = PassengerSchema(many=True)
 
 class PassengerRegistration(Resource):
     def post(self):
@@ -175,6 +167,8 @@ class AllPassengers(Resource):
 #                                            #     Owner Resource     #                                     #
 #                                            #------------------------#                                     #
 #############################################################################################################
+
+owner_schema              = OwnerSchema(many=True)
 
 class OwnerRegistration(Resource):
     def post(self):
@@ -225,6 +219,8 @@ class AllOwners(Resource):
 #                                        #     Driver Resource    #                                         #
 #                                        #------------------------#                                         #
 #############################################################################################################
+
+driver_schema             = DriverSchema(many=True)
 
 class DriverRegistration(Resource):
     def post(self):
@@ -277,6 +273,8 @@ class AllDrivers(Resource):
 #                                        #------------------------#                                         #
 #############################################################################################################
 
+vehicle_schema            = VehicleSchema(many=True)
+
 class VehiclRegistration(Resource):
     def post(self):
         data = request.get_json(force=True)
@@ -326,7 +324,9 @@ class AllVehicles(Resource):
 #                                        #------------------------#                                         #
 #############################################################################################################
 
-class TripPlanRegistration(Resource):
+trip_plan_schema          = TripPlanSchema(many=True)
+
+class CreateTripPlan(Resource):
     def post(self):
         data = request.get_json(force=True)
         
@@ -368,7 +368,13 @@ class AllTrips(Resource):
         d1 = TripPlanModel().return_all()
         print(d1)
         res = trip_plan_schema.dump(d1)
-        return { 'trip_plan': res}
+        return { 'trip_plans': res}
+
+class TripbyId(Resource):
+    def get(self, trip_id):
+        d1 = TripPlanModel().find_by_trip_id(trip_id)
+        res = trip_plan_schema.dump(d1)
+        return {'trip_plan': res}
 
 
 #############################################################################################################
@@ -377,7 +383,9 @@ class AllTrips(Resource):
 #                                           #-------------------------#                                     #    
 #############################################################################################################
 
-class TripStatusRegistration(Resource):
+trip_status_schema        = TripStatusSchema(many=True)
+
+class CreateTripStatus(Resource):
     def post(self):
         data = request.get_json(force=True)
         
@@ -427,8 +435,9 @@ class AllTripStatus(Resource):
 #                                        #-------------------------------#                                  #    
 #############################################################################################################
 
+pickuploc_schema          = PickupLocationSchema(many=True)
 
-class PickupLocationsRegistration(Resource):
+class AddPickupLocations(Resource):
     def post(self):
         data = request.get_json(force=True)
         
@@ -461,7 +470,6 @@ class PickupLocationsRegistration(Resource):
 class PickUpLocbyTrip(Resource):
     def get(self, trip_id):
         d1 = PickupLocationsModel().find_by_tripId(trip_id)
-        print(d1)
         res = pickuploc_schema.dump(d1)
         return { 'pickup_loc': res}
 
@@ -471,7 +479,9 @@ class PickUpLocbyTrip(Resource):
 #                                        #-------------------------#                                        #
 #############################################################################################################
 
-class WaypointsRegistration(Resource):
+waypoints_schema          = WaypointsSchema(many=True)
+
+class AddWaypoints(Resource):
     def post(self):
         data = request.get_json(force=True)
         
@@ -504,7 +514,6 @@ class WaypointsRegistration(Resource):
 class WaypointbyTrip(Resource):
     def get(self, trip_id):
         d1 = WaypointsModel().find_by_tripId(trip_id)
-        print(d1)
         res = waypoints_schema.dump(d1)
         return { 'waypoint': res}
 
@@ -515,7 +524,9 @@ class WaypointbyTrip(Resource):
 #                                #-------------------------------#                                          #
 #############################################################################################################
 
-class DriverFeedbackRegistration(Resource):
+driver_feedback_schema    = DriverFeedbackSchema(many=True)
+
+class CreateDriverFeedback(Resource):
     def post(self):
         data = request.get_json(force=True)
         
@@ -559,7 +570,10 @@ class DriverFeedbackbyId(Resource):
 #                                #     Passenger Feedback Resource  #                                       #
 #                                #----------------------------------#                                       #
 #############################################################################################################
-class PassengerFeedbackRegistration(Resource):
+
+passenger_feedback_schema = PassengerFeedbackSchema(many=True)
+
+class CreatePassengerFeedback(Resource):
     def post(self):
         data = request.get_json(force=True)
         

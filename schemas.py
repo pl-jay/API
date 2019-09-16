@@ -24,7 +24,6 @@ class OwnerSchema(Schema):
     created      = fields.Str()
     updated      = fields.Str()
 
-
 class DriverSchema(Schema):
     dr_id       = fields.Number()
     dr_token_id = fields.Str()
@@ -59,8 +58,7 @@ class TripPlanSchema(Schema):
     no_of_passengers = fields.Number()
     date_from        = fields.Str()
     date_to          = fields.Str()
-    pickup_loc_lat   = fields.Float()
-    pickup_loc_lng   = fields.Float()
+    pickup_loc   = fields.Str()
     ac_condition     = fields.Bool()
     destination      = fields.Str()
     passenger_id     = fields.Number()
@@ -83,8 +81,7 @@ class TripStatusSchema(Schema):
 class PickupLocationSchema(Schema):
     pl_id           = fields.Number()
     trip_id         = fields.Number()
-    pickup_loc_lat  = fields.Float()
-    pickup_loc_lng  = fields.Float()
+    pickup_loc  = fields.Str()
     created      = fields.Str()
     updated      = fields.Str()
 
@@ -96,11 +93,11 @@ class WaypointsSchema(Schema):
     updated      = fields.Str()
 
 class UserSchema(Schema):
-    username = fields.String()
-    password = fields.String()
-    user_role = fields.String()
-    access_token = fields.String()
-    refresh_token = fields.String()
+    username = fields.Str()
+    password = fields.Str()
+    user_role = fields.Str()
+    access_token = fields.Str()
+    refresh_token = fields.Str()
 
 class DriverFeedbackSchema(Schema):
     fdb_id      = fields.Number()

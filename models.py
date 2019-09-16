@@ -251,7 +251,7 @@ class TripPlanModel(db.Model):
 
 	@classmethod
 	def find_by_trip_id(cls, trip_id):
-    		return cls.query.filter_by(trip_id = trip_id).first()
+    		return TripPlanModel.query.filter_by(trip_id = trip_id).all()
 
 	@classmethod
 	def delete_all(cls):
@@ -398,8 +398,8 @@ class PickupLocationsModel(db.Model):
 	pl_id			= db.Column(db.Integer, primary_key=True, autoincrement=True)
 	trip_id 		= db.Column(db.Integer, ForeignKey('tripplan.trip_id'))
 	pickup_loc		= db.Column(db.String(50))
-	created 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
-	updated 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
+	created 	 	= db.Column(db.String(50), default=datetime.now(),nullable=True)
+	updated 	 	= db.Column(db.String(50), default=datetime.now(),nullable=True)
 
 	def save_to_db(self):
 		db.session.add(self)
@@ -407,11 +407,11 @@ class PickupLocationsModel(db.Model):
 
 	@classmethod
 	def return_all(cls):
-		return jsonify(PickupLocationsModel.query.all())
+		return PickupLocationsModel.query.all()
 
 	@classmethod
 	def find_by_tripId(cls, tripId):
-    		return cls.query.filter_by(trip_id = tripId).first()
+    		return PickupLocationsModel.query.filter_by(trip_id = tripId).all()
 
 	@classmethod
 	def delete_all(cls):
@@ -444,11 +444,11 @@ class WaypointsModel(db.Model):
 
 	@classmethod
 	def return_all(cls):
-		return jsonify(WaypointsModel.query.all())
+		return WaypointsModel.query.all()
 
 	@classmethod
 	def find_by_tripId(cls, tripId):
-    		return cls.query.filter_by(trip_id = tripId).first()
+    		return WaypointsModel.query.filter_by(trip_id = tripId).all()
 
 	@classmethod
 	def delete_all(cls):
