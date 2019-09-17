@@ -115,4 +115,13 @@ api.add_resource(resources.SendBudget, '/sendBudget')
 
 api.add_resource(resources.CreatePassengerFeedback, '/set_passenger_feedback')
 api.add_resource(resources.CreateDriverFeedback, '/set_driver_feedback')
+
+
+				# VEHICLE POST METHODS #
+api.add_resource(resources.VehiclesforOwner, '/vehiclesforowner')
+
+
+
+
+
 #endregion

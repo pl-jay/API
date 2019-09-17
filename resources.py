@@ -184,6 +184,7 @@ class AllPassengers(Resource):
         print(d1)
         res = passenger_schema.dump(d1)
         return { 'passengers': res}
+
 #endregion
 
 #############################################################################################################
@@ -238,6 +239,20 @@ class AreaforOwner(Resource):
     def get(self, ow_id):
         d1 = OwnerModel().get_area(ow_id)
         return {'area': d1}
+
+class VehiclesforOwner(Resource):
+    def post(self):
+
+        data = request.get_json(force=True)
+
+        owner   = data['ow_id']
+        v_type= data['v_type']
+
+        #d1 = VehicleModel().driver_has_vehicle_byLoad(owner,capacity)
+        #d2 = VehicleModel().driver_has_vehicle_byAC(owner,ac)
+        d3 = VehicleModel().driver_has_vehicle_byType(owner,v_type)
+
+        return {'response': d3}
 #endregion
 
 #############################################################################################################
@@ -339,6 +354,9 @@ class AllVehicles(Resource):
         print(d1)
         res = vehicle_schema.dump(d1)
         return { 'vehicle': res}
+
+
+
 #endregion
 
 #############################################################################################################
@@ -378,25 +396,49 @@ class CreateTripPlan(Resource):
 
 class AllTrips(Resource):
     def get(self):
-        d1 = TripPlanModel().return_all()
-        print(d1)
-        res = trip_plan_schema.dump(d1)
+        res = trip_plan_schema.dump(TripPlanModel().return_all())
         return { 'trip_plans': res}
 
 class TripbyId(Resource):
     def get(self, trip_id):
-        d1 = TripPlanModel().find_by_trip_id(trip_id)
-        res = trip_plan_schema.dump(d1)
+        res = trips_plan_schema.dump(TripPlanModel().find_by_trip_id(trip_id))
         return {'trip_plan': res}
 
 class SendTripPlanToOwner(Resource):
     def get(self, ow_id):
-        area = OwnerModel().get_area(ow_id)
-        data = TripPlanModel().trip_detailsbyArea(area)
-
-        res = trips_plan_schema.dump(data)
+        res = self.owner_suitsfor_trip(ow_id)
         
         return {'trip_details': res}
+
+    def get_tripDetails(self, trip_id):
+        return trips_plan_schema.dump(TripPlanModel().find_by_trip_id(trip_id))
+
+    def owner_suitsfor_trip(self, owId):
+
+        area = OwnerModel().get_area(owId)
+
+        trip_by_area = TripPlanModel().trip_detailsbyArea(area)
+
+        trip_plan_json = trips_plan_schema.dump(trip_by_area)
+
+        for trip in trip_plan_json:
+            print('outer loop')
+            trip_details = self.get_tripDetails(trip['trip_id'])
+
+            for details in trip_details:
+                print('inner loop')
+                if (VehicleModel().driver_has_vehicle_byLoad(owId, details['no_of_passengers']) and 
+                    VehicleModel().driver_has_vehicle_byAC(owId, details['ac_condition']) and 
+                    VehicleModel().driver_has_vehicle_byType(owId, details['vehicle_type'])):
+
+                    return True
+                    continue
+                else:
+                    return False
+                    break
+
+
+
 
 #endregion
 

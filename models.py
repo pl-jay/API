@@ -131,6 +131,7 @@ class OwnerModel(db.Model):
 	@classmethod
 	def get_ownerId(cls, user_name):
 		return cls.query.filter_by(owner_email = user_name).all()[0].ow_id
+
 #endregion
 
 #############################################################################################################
@@ -244,6 +245,29 @@ class VehicleModel(db.Model):
 			return {'message': '{} row(s) deleted'.format(num_rows_deleted)}
 		except:
 			return {'message': 'Something went wrong'}
+
+
+	@classmethod
+	def driver_has_vehicle_byType(cls,owId,type):		
+		if cls.query.filter_by(owner_id=owId).filter_by(vehicle_type=type).filter_by(is_ontrip=False).first():
+			return True
+		else:
+			return False
+
+	@classmethod
+	def driver_has_vehicle_byAC(cls, owId,ac_cond):
+		if cls.query.filter_by(owner_id=owId).filter_by(ac_condition=ac_cond).filter_by(is_ontrip=False).first():
+			return True
+		else:
+			return False
+
+	@classmethod
+	def driver_has_vehicle_byLoad(cls, owId, capacity):
+		if cls.query.filter_by(owner_id=owId).filter(cls.no_of_passengers >= capacity).filter_by(is_ontrip=False).first():
+			return True
+		else:
+			return False
+
 #endregion
 
 #############################################################################################################
@@ -282,11 +306,11 @@ class TripPlanModel(db.Model):
 
 	@classmethod
 	def return_all(cls):
-		return TripPlanModel.query.all()
+		return cls.query.all()
 
 	@classmethod
 	def find_by_trip_id(cls, trip_id):
-			return TripPlanModel.query.filter_by(trip_id = trip_id).all()	
+		return cls.query.filter_by(trip_id = trip_id).all()	
 
 	@classmethod
 	def delete_all(cls):
@@ -299,10 +323,7 @@ class TripPlanModel(db.Model):
 
 	@classmethod
 	def trip_detailsbyArea(cls, area):
-		res = TripPlanModel.query.filter_by(pickup_loc = area).all()
-		print('in model')
-		print(res)
-		return res
+		return cls.query.filter_by(pickup_loc = area).all()
 
 #endregion	
 
