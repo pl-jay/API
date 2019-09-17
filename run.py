@@ -101,3 +101,7 @@ api.add_resource(resources.UserLogoutAccess, '/logout/access')
 api.add_resource(resources.CreateTripPlan, '/createTrip')
 
 
+# Owners #
+
+api.add_resource(resources.AssignDrivers, '/assignDrivers')
+api.add_resource(resources.SendBudget, '/sendBudget')

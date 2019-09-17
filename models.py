@@ -12,7 +12,7 @@ from passlib.hash import pbkdf2_sha256 as sha256
 #############################################################################################################
 
 class PassengerModel(db.Model):
-    
+	
 	__tablename__ = 'passenger'
 	__table_args__ = {'extend_existing': True}
 
@@ -50,7 +50,7 @@ class PassengerModel(db.Model):
 
 	@classmethod
 	def all(cls):
-    		return PassengerModel.query.all()		
+			return PassengerModel.query.all()		
 
 	@classmethod
 	def find_by_email(cls, email):
@@ -76,7 +76,7 @@ class PassengerModel(db.Model):
 #############################################################################################################
 
 class OwnerModel(db.Model):
-    
+	
 	__tablename__ = 'owner'
 	__table_args__ = {'extend_existing': True}
 
@@ -84,6 +84,7 @@ class OwnerModel(db.Model):
 	ow_token_id  = db.Column(db.String(120))
 	owner_name   = db.Column(db.String(100), nullable=False)
 	owner_nic	 = db.Column(db.String(20), nullable=False)
+	owner_email  = db.Column(db.String(50))
 	contact_num  = db.Column(db.Integer)
 	address 	 = db.Column(db.String(120),nullable=False)
 	area 		 = db.Column(db.String(50), nullable=False)
@@ -124,6 +125,9 @@ class OwnerModel(db.Model):
 		except:
 			return {'message': 'Something went wrong'}
 
+	@classmethod
+	def get_ownerId(cls, user_name):
+		return cls.query.filter_by(owner_email = user_name).all()[0].ow_id
 #############################################################################################################
 #												#----------------#										    #
 #												#  Driver Model  #											#
@@ -131,7 +135,7 @@ class OwnerModel(db.Model):
 #############################################################################################################
 
 class DriverModel(db.Model):
-    
+	
 	__tablename__ = 'driver'
 	__table_args__ = {'extend_existing': True}
 
@@ -165,7 +169,7 @@ class DriverModel(db.Model):
 
 	@classmethod
 	def find_by_email(cls, email):
-    		return cls.query.filter_by(driver_email = email).first()
+			return cls.query.filter_by(driver_email = email).first()
 
 	@classmethod
 	def delete_all(cls):
@@ -177,8 +181,12 @@ class DriverModel(db.Model):
 			return {'message': 'Something went wrong'}
 
 	@classmethod
-	def get_driverId(cls, email):
+	def get_driverIdbyEmail(cls, email):
 		return cls.query.filter_by(driver_email = email).all()[0].dr_id
+
+	@classmethod
+	def get_driverIdbyNIC(cls, nic):
+		return cls.query.filter_by(driver_nic = nic).all()[0].dr_id
 #############################################################################################################
 #												#----------------#										    #
 #												# Vehicle Model  #											#
@@ -216,7 +224,7 @@ class VehicleModel(db.Model):
 
 	@classmethod
 	def find_by_vehicle_reg_number(cls, vehicle_reg_number):
-    		return cls.query.filter_by(vehicle_reg_number = vehicle_reg_number).first()
+			return cls.query.filter_by(vehicle_reg_number = vehicle_reg_number).first()
 
 	@classmethod
 	def delete_all(cls):
@@ -234,7 +242,7 @@ class VehicleModel(db.Model):
 #############################################################################################################
 
 class TripPlanModel(db.Model):
-    
+	
 	__tablename__ = 'tripplan'
 
 	trip_id			 = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -266,7 +274,7 @@ class TripPlanModel(db.Model):
 
 	@classmethod
 	def find_by_trip_id(cls, trip_id):
-    		return TripPlanModel.query.filter_by(trip_id = trip_id).all()	
+			return TripPlanModel.query.filter_by(trip_id = trip_id).all()	
 
 	@classmethod
 	def delete_all(cls):
@@ -294,7 +302,7 @@ class TripPlanModel(db.Model):
 #############################################################################################################
 
 class TripStatusModel(db.Model):
-    
+	
 	__tablename__ = 'tripstatus'
 
 	ts_id					= db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -302,9 +310,9 @@ class TripStatusModel(db.Model):
 	owner_id				= db.Column(db.Integer, ForeignKey('owner.ow_id'))
 	trip_budget				= db.Column(db.Float)
 	assigned_driver			= db.Column(db.Integer, ForeignKey('driver.dr_id'))
-	is_confirmed_passenger	= db.Column(db.Boolean)
-	is_confirmed_driver		= db.Column(db.Boolean)
-	trip_started			= db.Column(db.Boolean)
+	is_confirmed_passenger	= db.Column(db.Boolean, default=False)
+	is_confirmed_driver		= db.Column(db.Boolean, default=False)
+	trip_started			= db.Column(db.Boolean, default=False)
 	vehicle_no				= db.Column(db.Integer, ForeignKey('vehicle.v_id'))
 	created 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
 	updated 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
@@ -313,16 +321,15 @@ class TripStatusModel(db.Model):
 	vehicle  = relationship("VehicleModel", back_populates='tripstatus')
 
 	def save_to_db(self):
+		print('model1')
 		db.session.add(self)
+		print('model2')
 		db.session.commit()
+		print('model3')
 
 	@classmethod
 	def return_all(cls):
 		return TripStatusModel.query.all()
-
-	@classmethod
-	def find_by_tripId(cls, tripId):
-    		return TripStatusModel.query.filter_by(trip_id = tripId).all()
 
 	@classmethod
 	def delete_all(cls):
@@ -333,6 +340,37 @@ class TripStatusModel(db.Model):
 		except:
 			return {'message': 'Something went wrong'}
 
+	@classmethod
+	def update_tableforSetBudget(cls, trip_id, budget, ownerId):
+		new_record = cls.query.filter_by(trip_id = trip_id).first()
+
+		new_record.trip_budget  = budget
+		new_record.owner_id 	= ownerId
+
+		db.session.commit()
+
+	@classmethod
+	def update_tableforAssignDriver(cls, tsId, driverId):
+		new_record = cls.query.filter_by(ts_id = tsId).first()
+
+		new_record.assigned_driver = driverId
+		
+		db.session.commit()
+
+	@classmethod
+	def find_by_newBudget(cls,tripId,owId, budget):
+		res = TripStatusModel.query.filter_by(trip_id=tripId).filter_by(owner_id=owId).filter_by(trip_budget=budget).all()
+		return res
+
+	@classmethod
+	def find_by_newDriver(cls,tsId,driverId):
+		res = TripStatusModel.query.filter_by(ts_id=tsId).filter_by(assigned_driver=driverId).all()
+		return res
+
+	@classmethod
+	def get_tripstatus_idbyRecord(cls,tripId,owId, budget):
+		res = TripStatusModel.query.filter_by(trip_id=tripId).filter_by(owner_id=owId,trip_budget=budget).all()[0].ts_id
+		return res
 
 #############################################################################################################
 #										#---------------------#												#
@@ -341,7 +379,7 @@ class TripStatusModel(db.Model):
 #############################################################################################################
 
 class DriverFeedbackModel(db.Model):
-    
+	
 	__tablename__ = 'driverfeedback'
 	__table_args__ = {'extend_existing': True}
 
@@ -362,7 +400,7 @@ class DriverFeedbackModel(db.Model):
 
 	@classmethod
 	def find_by_driverId(cls, driverId):
-    		return cls.query.filter_by(driver_id = driverId).all()
+			return cls.query.filter_by(driver_id = driverId).all()
 
 	@classmethod
 	def delete_all(cls):
@@ -380,7 +418,7 @@ class DriverFeedbackModel(db.Model):
 #############################################################################################################
 
 class PassengerFeedbackModel(db.Model):
-    
+	
 	__tablename__ = 'passengerfeedback'
 
 	fdb_id		 = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -400,7 +438,7 @@ class PassengerFeedbackModel(db.Model):
 
 	@classmethod
 	def find_by_passengerId(cls, ps_id):
-    		return cls.query.filter_by(passenger_id = ps_id).all()
+			return cls.query.filter_by(passenger_id = ps_id).all()
 
 	@classmethod
 	def delete_all(cls):
@@ -418,7 +456,7 @@ class PassengerFeedbackModel(db.Model):
 #############################################################################################################
 
 class PickupLocationsModel(db.Model):
-    
+	
 	__tablename__ = 'pickuplocations'
 
 	pl_id			= db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -437,7 +475,7 @@ class PickupLocationsModel(db.Model):
 
 	@classmethod
 	def find_by_tripId(cls, tripId):
-    		return PickupLocationsModel.query.filter_by(trip_id = tripId).all()
+			return PickupLocationsModel.query.filter_by(trip_id = tripId).all()
 
 	@classmethod
 	def delete_all(cls):
@@ -455,7 +493,7 @@ class PickupLocationsModel(db.Model):
 #############################################################################################################
 
 class WaypointsModel(db.Model):
-    
+	
 	__tablename__ = 'waypoints'
 
 	wp_id	 = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -474,7 +512,7 @@ class WaypointsModel(db.Model):
 
 	@classmethod
 	def find_by_tripId(cls, tripId):
-    		return WaypointsModel.query.filter_by(trip_id = tripId).all()
+			return WaypointsModel.query.filter_by(trip_id = tripId).all()
 
 	@classmethod
 	def delete_all(cls):
@@ -492,68 +530,68 @@ class WaypointsModel(db.Model):
 #############################################################################################################
 
 class UserModel(db.Model):
-    __tablename__ = 'users'
+	__tablename__ = 'users'
 
-    id 			  = db.Column(db.Integer, primary_key = True)
-    username 	  = db.Column(db.String(120), nullable = False)
-    password 	  = db.Column(db.String(120), nullable = False)
-    user_role	  = db.Column(db.String(10), nullable = False)
-    access_token  = db.Column(db.String(120), nullable = True)
-    refresh_token = db.Column(db.String(120), nullable = True)
+	id 			  = db.Column(db.Integer, primary_key = True)
+	username 	  = db.Column(db.String(120), nullable = False)
+	password 	  = db.Column(db.String(120), nullable = False)
+	user_role	  = db.Column(db.String(10), nullable = False)
+	access_token  = db.Column(db.String(120), nullable = True)
+	refresh_token = db.Column(db.String(120), nullable = True)
 
-    def save_to_db(self):
-    	db.session.add(self)
-    	db.session.commit()
-    
-    @classmethod
-    def find_by_username(cls, username):
-        return cls.query.filter_by(username = username).first()
-    
-    @classmethod
-    def update_table(cls, username, access_token, refresh_token):
-    	new_record = cls.query.filter_by(username = username).first()
+	def save_to_db(self):
+		db.session.add(self)
+		db.session.commit()
+	
+	@classmethod
+	def find_by_username(cls, username):
+		return cls.query.filter_by(username = username).first()
+	
+	@classmethod
+	def update_table(cls, username, access_token, refresh_token):
+		new_record = cls.query.filter_by(username = username).first()
 
-    	new_record.access_token  = access_token
-    	new_record.refresh_token = refresh_token
+		new_record.access_token  = access_token
+		new_record.refresh_token = refresh_token
 
-    	db.session.commit()
+		db.session.commit()
 
-    @classmethod
-    def return_all(cls):
-        def to_json(x):
-            return {
-                'username': x.username,
-                'password': x.password,
-                'access_token': x.access_token,
-                'refresh_token': x.refresh_token,
+	@classmethod
+	def return_all(cls):
+		def to_json(x):
+			return {
+				'username': x.username,
+				'password': x.password,
+				'access_token': x.access_token,
+				'refresh_token': x.refresh_token,
 				'user_role': x.user_role
-            }
-        return {'users': list(map(lambda x: to_json(x), UserModel.query.all()))}
-    
-    @classmethod
-    def all(cls):
-    	return UserModel.query.all()
+			}
+		return {'users': list(map(lambda x: to_json(x), UserModel.query.all()))}
+	
+	@classmethod
+	def all(cls):
+		return UserModel.query.all()
 
-    @classmethod
-    def delete_all(cls):
-        try:
-            num_rows_deleted = db.session.query(cls).delete()
-            db.session.commit()
-            return {'message': '{} row(s) deleted'.format(num_rows_deleted)}
-        except:
-            return {'message': 'Something went wrong'}
+	@classmethod
+	def delete_all(cls):
+		try:
+			num_rows_deleted = db.session.query(cls).delete()
+			db.session.commit()
+			return {'message': '{} row(s) deleted'.format(num_rows_deleted)}
+		except:
+			return {'message': 'Something went wrong'}
 
-    @staticmethod
-    def generate_hash(password):
-        return sha256.hash(password)
-    
-    @staticmethod
-    def verify_hash(password, hash):
-        return sha256.verify(password, hash)
+	@staticmethod
+	def generate_hash(password):
+		return sha256.hash(password)
+	
+	@staticmethod
+	def verify_hash(password, hash):
+		return sha256.verify(password, hash)
 
-    @classmethod
-    def get_user_role(cls, user_name):
-    	return cls.query.filter_by(username = user_name).all()[0].user_role
+	@classmethod
+	def get_user_role(cls, user_name):
+		return cls.query.filter_by(username = user_name).all()[0].user_role
 
 #############################################################################################################
 #									#------------------------#												#
@@ -563,20 +601,20 @@ class UserModel(db.Model):
 
 class RevokedTokenModel(db.Model):
 
-    __tablename__ = 'revoked_tokens'
-    __table_args__ = {'extend_existing': True}
-    
-    id  = db.Column(db.Integer, primary_key = True)
-    jti = db.Column(db.String(120))
-    
-    def add(self):
-        db.session.add(self)
-        db.session.commit()
-    
-    @classmethod
-    def is_jti_blacklisted(cls, jti):
-        query = cls.query.filter_by(jti = jti).first()
-        return bool(query)
+	__tablename__ = 'revoked_tokens'
+	__table_args__ = {'extend_existing': True}
+	
+	id  = db.Column(db.Integer, primary_key = True)
+	jti = db.Column(db.String(120))
+	
+	def add(self):
+		db.session.add(self)
+		db.session.commit()
+	
+	@classmethod
+	def is_jti_blacklisted(cls, jti):
+		query = cls.query.filter_by(jti = jti).first()
+		return bool(query)
 
 #############################################################################################################
 #									#------------------------#												#

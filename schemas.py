@@ -15,6 +15,7 @@ class OwnerSchema(Schema):
     ow_token_id  = fields.Str()
     owner_name   = fields.Str()
     owner_nic    = fields.Str()
+    owner_email  = fields.Str()
     contact_num  = fields.Number()
     address      = fields.Str()
     area         = fields.Str()
