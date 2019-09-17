@@ -1,10 +1,10 @@
+#region IMPORTS
 import json
 from flask_restful import Resource, reqparse,inputs
 from flask import request
 from flask_jwt_extended import (
     create_access_token, create_refresh_token, jwt_required, 
     jwt_refresh_token_required, get_jwt_identity, get_raw_jwt)
-
 
 from models import (
     PassengerModel,OwnerModel,DriverModel,
@@ -17,7 +17,9 @@ from schemas import (
     VehicleSchema,TripPlanSchema,TripStatusSchema,
     PickupLocationSchema,WaypointsSchema,UserSchema,
     DriverFeedbackSchema,PassengerFeedbackSchema)
+#endregion
 
+#region Schemas
 users_schema              = UserSchema(many=True)
 passenger_schema          = PassengerSchema(many=True)
 owner_schema              = OwnerSchema(many=True)
@@ -29,7 +31,7 @@ pickuploc_schema          = PickupLocationSchema(many=True)
 waypoints_schema          = WaypointsSchema(many=True)
 driver_feedback_schema    = DriverFeedbackSchema(many=True)
 passenger_feedback_schema = PassengerFeedbackSchema(many=True)
-
+#endregion
 
 #############################################################################################################
 #                                   #------------------------#                                              #
@@ -37,6 +39,7 @@ passenger_feedback_schema = PassengerFeedbackSchema(many=True)
 #                                   #------------------------#                                              #  
 #############################################################################################################
 
+#region User Resource
 user_schema              = UserSchema()
 
 class UserRegistration(Resource):
@@ -139,6 +142,7 @@ class AllUsers(Resource):
 
     def delete(self):
         return UserModel.delete_all()
+#endregion
 
 #############################################################################################################
 #                                        #------------------------#                                         #
@@ -146,7 +150,7 @@ class AllUsers(Resource):
 #                                        #------------------------#                                         #
 #############################################################################################################
 
-
+#region Passenger Resources
 
 class PassengerRegistration(Resource):
     def post(self):
@@ -180,6 +184,7 @@ class AllPassengers(Resource):
         print(d1)
         res = passenger_schema.dump(d1)
         return { 'passengers': res}
+#endregion
 
 #############################################################################################################
 #                                            #------------------------#                                     #
@@ -187,7 +192,7 @@ class AllPassengers(Resource):
 #                                            #------------------------#                                     #
 #############################################################################################################
 
-
+#region Owner Resources
 
 class OwnerRegistration(Resource):
     def post(self):
@@ -233,11 +238,7 @@ class AreaforOwner(Resource):
     def get(self, ow_id):
         d1 = OwnerModel().get_area(ow_id)
         return {'area': d1}
-
-
-
-
-
+#endregion
 
 #############################################################################################################
 #                                        #------------------------#                                         #
@@ -245,7 +246,7 @@ class AreaforOwner(Resource):
 #                                        #------------------------#                                         #
 #############################################################################################################
 
-
+#region Driver Resources
 
 class DriverRegistration(Resource):
     def post(self):
@@ -289,6 +290,7 @@ class AllDrivers(Resource):
         res = driver_schema.dump(d1)
         return { 'drivers': res}
 
+#endregion
 
 #############################################################################################################
 #                                        #------------------------#                                         #
@@ -296,7 +298,7 @@ class AllDrivers(Resource):
 #                                        #------------------------#                                         #
 #############################################################################################################
 
-
+#region Vehicle Resources
 
 class VehiclRegistration(Resource):
     def post(self):
@@ -337,12 +339,15 @@ class AllVehicles(Resource):
         print(d1)
         res = vehicle_schema.dump(d1)
         return { 'vehicle': res}
+#endregion
 
 #############################################################################################################
 #                                        #------------------------#                                         #
 #                                        #     TripPlan Resource  #                                         #
 #                                        #------------------------#                                         #
 #############################################################################################################
+
+#region Triop Plan Resources
 
 trip_plan_schema          = TripPlanSchema()
 
@@ -371,7 +376,6 @@ class CreateTripPlan(Resource):
         except Exception as e:
             return {'message': 'Something went wrong', 'error': e, 'data': new_trip}, 500
 
-
 class AllTrips(Resource):
     def get(self):
         d1 = TripPlanModel().return_all()
@@ -394,6 +398,7 @@ class SendTripPlanToOwner(Resource):
         
         return {'trip_details': res}
 
+#endregion
 
 #############################################################################################################
 #                                           #-------------------------#                                     #
@@ -401,7 +406,7 @@ class SendTripPlanToOwner(Resource):
 #                                           #-------------------------#                                     #    
 #############################################################################################################
 
-
+#region Trip Status Resources
 
 class CreateTripStatus(Resource):
     def post(self):
@@ -489,12 +494,15 @@ class SendBudget(Resource):
             except Exception as e:
                 return {'message':'Something went wrong', 'error':e}
 
+#endregion
+
 #############################################################################################################
 #                                        #-------------------------------#                                  #
 #                                        #     PickupLocations Resource  #                                  #
 #                                        #-------------------------------#                                  #    
 #############################################################################################################
 
+#region Pickup Locations Resources
 
 class AddPickupLocations(Resource):
     def post(self):
@@ -518,8 +526,12 @@ class AddPickupLocations(Resource):
 class PickUpLocbyTrip(Resource):
     def get(self, trip_id):
         d1 = PickupLocationsModel().find_by_tripId(trip_id)
+        if not d1:
+            return {'message':'no pickup locations for this trip'}
         res = pickuploc_schema.dump(d1)
         return { 'pickup_loc': res}
+
+#endregion
 
 #############################################################################################################
 #                                        #-------------------------#                                        #
@@ -527,7 +539,7 @@ class PickUpLocbyTrip(Resource):
 #                                        #-------------------------#                                        #
 #############################################################################################################
 
-
+#region Waypoints Resources
 
 class AddWaypoints(Resource):
     def post(self):
@@ -540,8 +552,6 @@ class AddWaypoints(Resource):
             trip_id  = data['trip_id'],
             waypoint   = data['waypoint']
         )
-        
-        print(new_waypoint)
 
         try:
             new_waypoint.save_to_db()
@@ -553,9 +563,12 @@ class AddWaypoints(Resource):
 class WaypointbyTrip(Resource):
     def get(self, trip_id):
         d1 = WaypointsModel().find_by_tripId(trip_id)
+        if not d1:
+            return {'message':'no waypoints for this trip'}
         res = waypoints_schema.dump(d1)
         return { 'waypoint': res}
 
+#endregion
 
 #############################################################################################################
 #                                #-------------------------------#                                          #
@@ -563,7 +576,7 @@ class WaypointbyTrip(Resource):
 #                                #-------------------------------#                                          #
 #############################################################################################################
 
-
+#region Driver Resources
 
 class CreateDriverFeedback(Resource):
     def post(self):
@@ -594,6 +607,7 @@ class DriverFeedbackbyId(Resource):
         res = driver_feedback_schema.dump(d1)
         return { 'driver_feedback': res}
 
+#endregion
 
 #############################################################################################################
 #                                #----------------------------------#                                       #
@@ -601,7 +615,7 @@ class DriverFeedbackbyId(Resource):
 #                                #----------------------------------#                                       #
 #############################################################################################################
 
-
+#region Passenger Feedback Resources
 
 class CreatePassengerFeedback(Resource):
     def post(self):
@@ -634,6 +648,7 @@ class PassengerFeedbackbyId(Resource):
         res = passenger_feedback_schema.dump(d1)
         return { 'passenger_feedback': res}
 
+#endregion
 
 #############################################################################################################
 #                                       #------------------------#                                          #

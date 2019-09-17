@@ -10,7 +10,7 @@ from passlib.hash import pbkdf2_sha256 as sha256
 #										# Passenger Model#												    #
 #										#----------------#													#
 #############################################################################################################
-
+#region Passenger Model
 class PassengerModel(db.Model):
 	
 	__tablename__ = 'passenger'
@@ -69,12 +69,15 @@ class PassengerModel(db.Model):
 	def get_passengerId(cls, username):
 		return cls.query.filter_by(passenger_email = username).all()[0].ps_id
 
+#endregion
+
 #############################################################################################################
 #												#----------------#											#
 #												#   Owner Model  #											#
 #												#----------------#											#
 #############################################################################################################
 
+#region Owner Model
 class OwnerModel(db.Model):
 	
 	__tablename__ = 'owner'
@@ -128,12 +131,15 @@ class OwnerModel(db.Model):
 	@classmethod
 	def get_ownerId(cls, user_name):
 		return cls.query.filter_by(owner_email = user_name).all()[0].ow_id
+#endregion
+
 #############################################################################################################
 #												#----------------#										    #
 #												#  Driver Model  #											#
 #												#----------------#											#
 #############################################################################################################
 
+#region Driver Model
 class DriverModel(db.Model):
 	
 	__tablename__ = 'driver'
@@ -187,12 +193,16 @@ class DriverModel(db.Model):
 	@classmethod
 	def get_driverIdbyNIC(cls, nic):
 		return cls.query.filter_by(driver_nic = nic).all()[0].dr_id
+
+#endregion
+
 #############################################################################################################
 #												#----------------#										    #
 #												# Vehicle Model  #											#
 #												#----------------#											#
 #############################################################################################################
 
+#region Vehicle Model
 class VehicleModel(db.Model):
 
 	__tablename__ = 'vehicle'
@@ -234,6 +244,7 @@ class VehicleModel(db.Model):
 			return {'message': '{} row(s) deleted'.format(num_rows_deleted)}
 		except:
 			return {'message': 'Something went wrong'}
+#endregion
 
 #############################################################################################################
 #												#----------------#											#
@@ -241,6 +252,7 @@ class VehicleModel(db.Model):
 #												#----------------#											#
 #############################################################################################################
 
+#region Trip Plan Model
 class TripPlanModel(db.Model):
 	
 	__tablename__ = 'tripplan'
@@ -292,8 +304,7 @@ class TripPlanModel(db.Model):
 		print(res)
 		return res
 
-
-	
+#endregion	
 
 #############################################################################################################
 #											#-----------------#												#
@@ -301,6 +312,7 @@ class TripPlanModel(db.Model):
 #											#-----------------#												#
 #############################################################################################################
 
+#region Trip Status Model
 class TripStatusModel(db.Model):
 	
 	__tablename__ = 'tripstatus'
@@ -371,6 +383,7 @@ class TripStatusModel(db.Model):
 	def get_tripstatus_idbyRecord(cls,tripId,owId, budget):
 		res = TripStatusModel.query.filter_by(trip_id=tripId).filter_by(owner_id=owId,trip_budget=budget).all()[0].ts_id
 		return res
+#endregion
 
 #############################################################################################################
 #										#---------------------#												#
@@ -378,6 +391,7 @@ class TripStatusModel(db.Model):
 #										#---------------------#												#
 #############################################################################################################
 
+#region Driver Feedback Model
 class DriverFeedbackModel(db.Model):
 	
 	__tablename__ = 'driverfeedback'
@@ -410,6 +424,7 @@ class DriverFeedbackModel(db.Model):
 			return {'message': '{} row(s) deleted'.format(num_rows_deleted)}
 		except:
 			return {'message': 'Something went wrong'}
+#endregion
 
 #############################################################################################################
 #									#------------------------#												#
@@ -417,6 +432,7 @@ class DriverFeedbackModel(db.Model):
 #									#------------------------#												#
 #############################################################################################################
 
+#region Passenger Feedback Model
 class PassengerFeedbackModel(db.Model):
 	
 	__tablename__ = 'passengerfeedback'
@@ -448,6 +464,7 @@ class PassengerFeedbackModel(db.Model):
 			return {'message': '{} row(s) deleted'.format(num_rows_deleted)}
 		except:
 			return {'message': 'Something went wrong'}
+#endregion
 
 #############################################################################################################
 #											#------------------------#										#
@@ -455,6 +472,7 @@ class PassengerFeedbackModel(db.Model):
 #											#------------------------#										#
 #############################################################################################################
 
+#region PickupLocations Model
 class PickupLocationsModel(db.Model):
 	
 	__tablename__ = 'pickuplocations'
@@ -485,6 +503,7 @@ class PickupLocationsModel(db.Model):
 			return {'message': '{} row(s) deleted'.format(num_rows_deleted)}
 		except:
 			return {'message': 'Something went wrong'}
+#endregion
 
 #############################################################################################################
 #										#------------------------#											#
@@ -492,6 +511,7 @@ class PickupLocationsModel(db.Model):
 #										#------------------------#											#
 #############################################################################################################
 
+#region Waypooints Model
 class WaypointsModel(db.Model):
 	
 	__tablename__ = 'waypoints'
@@ -522,6 +542,7 @@ class WaypointsModel(db.Model):
 			return {'message': '{} row(s) deleted'.format(num_rows_deleted)}
 		except:
 			return {'message': 'Something went wrong'}
+#endregion
 
 #############################################################################################################
 #									#------------------------#												#
@@ -529,6 +550,7 @@ class WaypointsModel(db.Model):
 #									#------------------------#												#
 #############################################################################################################
 
+#region User Model
 class UserModel(db.Model):
 	__tablename__ = 'users'
 
@@ -592,6 +614,7 @@ class UserModel(db.Model):
 	@classmethod
 	def get_user_role(cls, user_name):
 		return cls.query.filter_by(username = user_name).all()[0].user_role
+#endregion
 
 #############################################################################################################
 #									#------------------------#												#
@@ -599,6 +622,7 @@ class UserModel(db.Model):
 #									#------------------------#												#
 #############################################################################################################
 
+#region Revoked Token Model
 class RevokedTokenModel(db.Model):
 
 	__tablename__ = 'revoked_tokens'
@@ -615,6 +639,7 @@ class RevokedTokenModel(db.Model):
 	def is_jti_blacklisted(cls, jti):
 		query = cls.query.filter_by(jti = jti).first()
 		return bool(query)
+#endregion
 
 #############################################################################################################
 #									#------------------------#												#

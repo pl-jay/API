@@ -6,9 +6,9 @@ from flask_jwt_extended import JWTManager
 from flask_restful import Resource
 
 
+#region BASIC APP CONFIGURATIONS->DB & CORS
 
 app = Flask(__name__)
-
 api = Api(app)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///appDB.db'
@@ -24,6 +24,9 @@ db  = SQLAlchemy(app)
 def create_tables():
     db.create_all()
 
+#endregion
+
+#region JWT CONFIGURATIONS
 
 app.config['JWT_SECRET_KEY'] = 'jwt-secret-string'
 
@@ -38,9 +41,9 @@ def check_if_token_in_blacklist(decrypted_token):
     jti = decrypted_token['jti']
     return models.RevokedTokenModel.is_jti_blacklisted(jti)
 
+#endregion
 
 import resources
-
 
 #############################################################################################################
 #                                #----------------------------------#                                       #
@@ -48,6 +51,7 @@ import resources
 #                                #----------------------------------#                                       #
 #############################################################################################################
 
+#region GET METHODS
 api.add_resource(resources.AllUsers, '/users')
 api.add_resource(resources.AllPassengers, '/passengers')
 api.add_resource(resources.AllOwners, '/owners')
@@ -56,29 +60,27 @@ api.add_resource(resources.AllVehicles, '/vehicles')
 api.add_resource(resources.AllTrips, '/trips')
 api.add_resource(resources.AllTripStatus, '/trip_status')
 
-#############################################################################################################
-#                                #----------------------------------#                                       #
-#                                #           GET with Query Param   #                                       #
-#                                #----------------------------------#                                       #
-#############################################################################################################
 
+					# FEEDBACK GET METHODS #					
+api.add_resource(resources.DriverFeedbackbyId, '/get_driver_feedback/<driver_id>')
+api.add_resource(resources.PassengerFeedbackbyId, '/get_passenger_feedback/<ps_id>')
 
-api.add_resource(resources.PickUpLocbyTrip, '/pickuploc/<trip_id>')
-api.add_resource(resources.WaypointbyTrip, '/waypoint/<trip_id>')
-api.add_resource(resources.TripbyId, '/trip/<trip_id>')
-api.add_resource(resources.TripStatusById, '/trip_status/<trip_id>')
-
-api.add_resource(resources.DriverFeedbackbyId, '/driver_feedback/<driver_id>')
-api.add_resource(resources.PassengerFeedbackbyId, '/passenger_feedback/<ps_id>')
-
-
-
-# TripPlans API #
-
+					# GET TRIPS FOR OWNERS  #
 api.add_resource(resources.SendTripPlanToOwner, '/tripsforowner/<ow_id>')
 
+					# GET TRIPS DETAILS BY ID #
+api.add_resource(resources.TripbyId, '/trip/<trip_id>')
 
+					# GET TRIP STATUS BY ID   #
+api.add_resource(resources.TripStatusById, '/trip_status/<trip_id>')
 
+					# GET WAYPOINTS #
+api.add_resource(resources.WaypointbyTrip, '/get_waypoints/<trip_id>')
+
+					# GET PICKUPLOCS #
+api.add_resource(resources.PickUpLocbyTrip, '/get_pickuplocs/<trip_id>')
+
+#endregion
 
 #############################################################################################################
 #                                #----------------------------------#                                       #
@@ -86,22 +88,31 @@ api.add_resource(resources.SendTripPlanToOwner, '/tripsforowner/<ow_id>')
 #                                #----------------------------------#                                       #
 #############################################################################################################
 
+#region POST METHODS
+
+				# TRIP PLAN POST METHODS #
+api.add_resource(resources.CreateTripPlan, '/createTrip')
+api.add_resource(resources.AddWaypoints, '/add_waypoints')
+api.add_resource(resources.AddPickupLocations, '/add_pickuplocs')
+
+
+					# USER REGISTRATION #
 api.add_resource(resources.UserRegistration, '/registration')
 api.add_resource(resources.UserLogin, '/login')
 
 api.add_resource(resources.PassengerRegistration, '/reg_passenger')
 api.add_resource(resources.OwnerRegistration, '/reg_owner')
 
-
-# 
 api.add_resource(resources.UserLogoutAccess, '/logout/access')
-# api.add_resource(User.UserLogoutRefresh, '/logout/refresh')
-# api.add_resource(User.TokenRefresh, '/token/refresh')
+api.add_resource(resources.UserLogoutRefresh, '/logout/refresh')
+api.add_resource(resources.TokenRefresh, '/token/refresh')
 
-api.add_resource(resources.CreateTripPlan, '/createTrip')
-
-
-# Owners #
-
+					# OWNERS POST METHODS #
 api.add_resource(resources.AssignDrivers, '/assignDrivers')
 api.add_resource(resources.SendBudget, '/sendBudget')
+
+				# FEEDBACK POST METHODS#
+
+api.add_resource(resources.CreatePassengerFeedback, '/set_passenger_feedback')
+api.add_resource(resources.CreateDriverFeedback, '/set_driver_feedback')
+#endregion
