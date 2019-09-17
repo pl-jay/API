@@ -407,8 +407,11 @@ class TripbyId(Resource):
 class SendTripPlanToOwner(Resource):
     def get(self, ow_id):
         res = self.owner_suitsfor_trip(ow_id)
-        
-        return {'trip_details': res}
+
+        for item in res:
+            print('for loop',item)
+
+        return res
 
     def get_tripDetails(self, trip_id):
         return trips_plan_schema.dump(TripPlanModel().find_by_trip_id(trip_id))
@@ -421,24 +424,28 @@ class SendTripPlanToOwner(Resource):
 
         trip_plan_json = trips_plan_schema.dump(trip_by_area)
 
-        for trip in trip_plan_json:
-            print('outer loop')
+        return_datas = {}
+        new_data    = []
+
+        for index,trip in enumerate(trip_plan_json):
             trip_details = self.get_tripDetails(trip['trip_id'])
 
             for details in trip_details:
-                print('inner loop')
                 if (VehicleModel().driver_has_vehicle_byLoad(owId, details['no_of_passengers']) and 
                     VehicleModel().driver_has_vehicle_byAC(owId, details['ac_condition']) and 
                     VehicleModel().driver_has_vehicle_byType(owId, details['vehicle_type'])):
 
-                    return True
-                    continue
+                    new_data.append(True)
+                    new_data.append(trip['trip_id'])
+                    break                    
                 else:
-                    return False
+                    new_data.append(False)
+                    new_data.append(trip['trip_id'])
                     break
+                    
+        return_data = new_data
 
-
-
+        return return_data
 
 #endregion
 
