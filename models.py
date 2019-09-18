@@ -204,7 +204,34 @@ class DriverModel(db.Model):
 
 	@classmethod
 	def get_driversby_ownerId(cls, owId):
-		return cls.query.filter_by(owner_id = owId).all()
+		return cls.query.filter_by(owner_id = owId).filter_by(is_ontrip = False).all()
+
+	@classmethod
+	def set_isOnTrip(cls, drId, set_value,unset_value):
+		if set_value:
+			print('driver outer if')
+			if cls.query.filter_by(dr_id = drId).filter_by(is_ontrip = False).scalar() is not None:
+				print('driver iner if')
+				new_record = cls.query.filter_by(dr_id = drId).filter_by(is_ontrip = False).first()
+				new_record.is_ontrip = True
+				db.session.commit()
+				return True
+			else:
+				print('driver inner else')
+				return False
+
+		if unset_value:
+			print('driver outer 2if')
+			if cls.query.filter_by(dr_id = drId).filter_by(is_ontrip = True).scalar() is not None:
+				print('driver iner2 if')
+				new_record = cls.query.filter_by(dr_id = drId).filter_by(is_ontrip = True).first()
+				new_record.is_ontrip = False
+				db.session.commit()
+				return True
+			else:
+				print('driver iner 2 else')
+				return False
+			
 
 #endregion Drier Model
 
@@ -283,7 +310,37 @@ class VehicleModel(db.Model):
 	def vehicle_detailby_driver(cls, driverId):
 		return cls.query.filter_by(driver_id = driverId).all()
 
-#endregion
+	@classmethod
+	def set_isOnTrip(cls,drId,set_value,unset_value):
+		
+		if set_value:
+			print('vehicle outer if')
+			if cls.query.filter_by(driver_id = drId).filter_by(is_ontrip = False).scalar() is not None:
+				print('vehicle iner if')
+				new_record = cls.query.filter_by(driver_id = drId).filter_by(is_ontrip = False).first()
+				new_record.is_ontrip = True
+				db.session.commit()
+				return True
+			else:
+				print('vehicle iner else')
+				return False
+
+		if unset_value:
+			print('vehicle outer 2 if')
+			if cls.query.filter_by(driver_id = drId).filter_by(is_ontrip = True).scalar() is not None:
+				print('vehicle iner 2 if')
+				new_record = cls.query.filter_by(driver_id = drId).filter_by(is_ontrip = True).first()
+				new_record.is_ontrip = False
+				db.session.commit()
+				return True
+			else:
+				print('vehicle iner 2 else')
+				return False
+
+
+
+
+#endregion Vehicle Model
 
 #############################################################################################################
 #												#----------------#											#
@@ -340,7 +397,9 @@ class TripPlanModel(db.Model):
 	def trip_detailsbyArea(cls, area):
 		return cls.query.filter_by(pickup_loc = area).all()
 
-#endregion	
+	
+
+#endregion	Trip Plan Model
 
 #############################################################################################################
 #											#-----------------#												#
@@ -361,6 +420,7 @@ class TripStatusModel(db.Model):
 	is_confirmed_passenger	= db.Column(db.Boolean, default=False)
 	is_confirmed_driver		= db.Column(db.Boolean, default=False)
 	trip_started			= db.Column(db.Boolean, default=False)
+	trip_finished			= db.Column(db.Boolean, default=False)
 	vehicle_no				= db.Column(db.Integer, ForeignKey('vehicle.v_id'))
 	created 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
 	updated 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
@@ -369,11 +429,8 @@ class TripStatusModel(db.Model):
 	vehicle  = relationship("VehicleModel", back_populates='tripstatus')
 
 	def save_to_db(self):
-		print('model1')
 		db.session.add(self)
-		print('model2')
 		db.session.commit()
-		print('model3')
 
 	@classmethod
 	def return_all(cls):
@@ -389,26 +446,23 @@ class TripStatusModel(db.Model):
 			return {'message': 'Something went wrong'}
 
 	@classmethod
-	def update_tableforSetBudget(cls, trip_id, budget, ownerId):
-		new_record = cls.query.filter_by(trip_id = trip_id).first()
-
+	def update_tableforSetBudget(cls,tsId, trip_id, budget):
+		new_record = cls.query.filter_by(ts_id = tsId).filter_by(trip_id = trip_id).first()
 		new_record.trip_budget  = budget
-		new_record.owner_id 	= ownerId
-
 		db.session.commit()
 
 	@classmethod
 	def update_tableforAssignDriver(cls, tsId, driverId):
 		new_record = cls.query.filter_by(ts_id = tsId).first()
-
 		new_record.assigned_driver = driverId
-		
 		db.session.commit()
 
 	@classmethod
-	def find_by_newBudget(cls,tripId,owId, budget):
-		res = TripStatusModel.query.filter_by(trip_id=tripId).filter_by(owner_id=owId).filter_by(trip_budget=budget).all()
-		return res
+	def find_by_newBudget(cls,tsId,tripId,owId):
+		if TripStatusModel.query.filter_by(ts_id=tsId).filter_by(trip_id=tripId).filter_by(owner_id=owId).scalar() is not None:
+			return True
+		else:
+			return False
 
 	@classmethod
 	def find_by_newDriver(cls,tsId,driverId):
@@ -419,7 +473,102 @@ class TripStatusModel(db.Model):
 	def get_tripstatus_idbyRecord(cls,tripId,owId, budget):
 		res = TripStatusModel.query.filter_by(trip_id=tripId).filter_by(owner_id=owId,trip_budget=budget).all()[0].ts_id
 		return res
-#endregion
+
+	@classmethod
+	def is_tripstatus(cls, tsId):
+		if cls.query.filter_by(ts_id = tsId).scalar() is not None:
+			return True
+		else:
+			return False
+
+	@classmethod
+	def driver_is_confirmed(cls, tsId):
+		if cls.query.filter_by(ts_id = tsId).filter_by(is_confirmed_driver = True).scalar() is not None:
+			return True
+		else:
+			return False
+
+	@classmethod
+	def passenger_is_confirmed(cls, tsId):
+		if cls.query.filter_by(ts_id = tsId).filter_by(is_confirmed_passenger = True).scalar() is not None:
+			return True
+		else:
+			return False
+
+	@classmethod
+	def passenger_confirmed(cls, tsId):
+		if cls.query.filter_by(ts_id = tsId).filter_by(is_confirmed_passenger = False).scalar() is not None:
+			new_record = cls.query.filter_by(ts_id = tsId).filter_by(is_confirmed_passenger = False).first()
+			new_record.is_confirmed_passenger = True
+			db.session.commit()
+			return True
+		else:
+			return False
+
+	@classmethod
+	def driver_confirmed(cls, tsId):
+		print('OH SHIT IF thats it')
+		if cls.query.filter_by(ts_id =tsId).filter_by(is_confirmed_driver = False).scalar() is not None:
+			print('OH SHIT IF')
+			new_record = cls.query.filter_by(ts_id = tsId).filter_by(is_confirmed_driver = False).first()
+			new_record.is_confirmed_driver = True
+			db.session.commit()
+			return True
+		else:
+			print('OH SHIT else')
+			return False
+
+	@classmethod
+	def tripstatus_for_driver(cls, drId):
+		return cls.query.filter_by(assigned_driver = drId).all()[0].ts_id
+
+	@classmethod
+	def trips_available_for_driver(cls, drId):
+		if cls.query.filter_by(assigned_driver = drId).scalar() is not None:
+			return True
+		else:
+			return False
+
+	@classmethod
+	def trip_id_for_driver(cls, drId):
+		return cls.query.filter_by(assigned_driver = drId).all()[0].trip_id
+
+	@classmethod
+	def set_trip_status(cls,tsId,set_value,unset_value):
+		if cls.query.filter_by(ts_id =tsId) \
+			.filter_by(trip_started = False) \
+			.filter_by(trip_finished = False) \
+			.filter_by(is_confirmed_passenger = True) \
+			.filter_by(is_confirmed_driver = True) \
+			.scalar() is not None:
+
+			if set_value:
+				print('outer if')
+				if cls.query.filter_by(ts_id =tsId).filter_by(trip_started = False).filter_by(trip_finished = False).scalar() is not None:
+					print('inner if')
+					new_record = cls.query.filter_by(ts_id = tsId).filter_by(trip_started = False).filter_by(trip_finished = False).first()
+					new_record.trip_started = True
+					db.session.commit()
+					return True
+				else:
+					print('outer shit')
+					return False
+
+			if unset_value:
+				print('outer if2 shit')
+				if cls.query.filter_by(ts_id = tsId).filter_by(trip_started = True).filter_by(trip_finished = False).scalar() is not None:
+					print('inner if')
+					new_record = cls.query.filter_by(ts_id = tsId).filter_by(trip_started = True).filter_by(trip_finished = False).first()
+					new_record.trip_finished = True
+					db.session.commit()
+					return True
+				else:
+					print('outer 2 if')
+					return False
+		else:
+			return False
+
+#endregion TripStatus Model
 
 #############################################################################################################
 #										#---------------------#												#

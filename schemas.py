@@ -75,6 +75,7 @@ class TripStatusSchema(Schema):
     is_confirmed_passenger  = fields.Bool()
     is_confirmed_driver     = fields.Bool()
     trip_started            = fields.Bool()
+    trip_finished           = fields.Bool()
     vehicle_no              = fields.Number()
     created      = fields.Str()
     updated      = fields.Str()

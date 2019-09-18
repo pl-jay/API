@@ -185,6 +185,10 @@ class AllPassengers(Resource):
         res = passenger_schema.dump(d1)
         return { 'passengers': res}
 
+class PassengerConfirmation(Resource):
+    def get(self,tsId):
+        return TripStatusModel().passenger_confirmed(tsId)
+
 #endregion
 
 #############################################################################################################
@@ -198,8 +202,6 @@ class AllPassengers(Resource):
 class OwnerRegistration(Resource):
     def post(self):
         data = request.get_json(force=True)
-        
-        print(data)
 
         if not data:
             return {'message':'No data provided'}, 400
@@ -243,17 +245,22 @@ class DriversforOwner(Resource):
 
         return_data = []
 
+        if not driver_schema.dump(DriverModel().get_driversby_ownerId(owId)):
+            return{'message':'no drivers available this moment'}
+
         for driver in driver_schema.dump(DriverModel().get_driversby_ownerId(owId)):
             
             for vehicle in vehicle_schema.dump(VehicleModel().vehicle_detailby_driver(driver['dr_id'])):
                 return_data.append({
                     'driver':driver['dr_id'],
-                    'vehicle':vehicle['vehicle_type'],
+                    'no_of_passengers':vehicle['no_of_passengers'],
                     'v_type':vehicle['vehicle_type'],
-                    'ac_condition':vehicle['ac_condition']
+                    'ac_condition':vehicle['ac_condition'],
+                    'availability':vehicle['is_ontrip']
                     })
 
         return return_data
+
 #endregion
 
 
@@ -302,14 +309,49 @@ class DriverRegistration(Resource):
 
 class AllDrivers(Resource):
     def get(self):
-        d1 = DriverModel().return_all()
-        print(d1)
-        res = driver_schema.dump(d1)
+        res = driver_schema.dump(DriverModel().return_all())
         return { 'drivers': res}
 
-# class AssignedToTrip(Resource):
-#     def get(self,):
+class DriverConfirmation(Resource):
+    def get(self, tsId, drId):
+        if(DriverModel().set_isOnTrip(drId,True,False)
+            and VehicleModel().set_isOnTrip(drId,True,False)
+            and TripStatusModel().driver_confirmed(tsId)):
 
+            return True
+        else:
+            return False
+
+class GetAssingedTripsStatus(Resource):
+    def get(self, drId):
+
+        if TripStatusModel().trips_available_for_driver(drId):
+            return {
+            'trip_status_id':TripStatusModel().tripstatus_for_driver(drId),
+            'trip_id':TripStatusModel().trip_id_for_driver(drId)}
+        else:
+            print('else')
+            return{'message':'no trips for you !'}
+
+class GetTripDetails(Resource):
+    def get(self, tripId):
+        return trips_plan_schema.dump(TripPlanModel().find_by_trip_id(tripId))
+
+class FinishTrip(Resource):
+    def get(self, tsId, drId):
+        if (TripStatusModel().set_trip_status(tsId,False,True) 
+            and DriverModel().set_isOnTrip(drId,False,True)
+            and VehicleModel().set_isOnTrip(drId,False,True)):
+            return True
+        else:
+            return False
+
+class StartTrip(Resource):
+    def get(self, tsId):
+        if TripStatusModel().set_trip_status(tsId,True,False):
+            return True
+        else:
+            return False
 
 #endregion Driver Resource
 
@@ -324,8 +366,6 @@ class AllDrivers(Resource):
 class VehiclRegistration(Resource):
     def post(self):
         data = request.get_json(force=True)
-        
-        print(data)
 
         if not data:
             return {'message':'No data provided'}, 400
@@ -344,8 +384,6 @@ class VehiclRegistration(Resource):
             insurance_data = data['insurance_data'],
             is_ontrip = data['is_ontrip']
         )
-        
-        print(new_vehicle)
 
         try:
             new_vehicle.save_to_db()
@@ -360,7 +398,6 @@ class AllVehicles(Resource):
         print(d1)
         res = vehicle_schema.dump(d1)
         return { 'vehicle': res}
-
 
 
 #endregion
@@ -521,17 +558,11 @@ class AssignDrivers(Resource):
         if not data:
             return {'message':'No data provided'}, 400
 
-        if not TripStatusModel.find_by_newDriver(trip_status_id,new_driver):
+        if TripStatusModel.is_tripstatus(trip_status_id):
             TripStatusModel.update_tableforAssignDriver(trip_status_id,new_driver)
+            return{'message':'success', 'trip_status': data['ts_id']}
         else:
-            new_entry = TripStatusModel(
-                assigned_driver = data['driver_id'],
-                )
-            try:
-                new_entry.save_to_db()
-                return {'message':'success'}
-            except Exception as e:
-                return {'message':'Something went wrong', 'error':e}
+            return{'message':'no trip status'}
 
 class SendBudget(Resource):
     def post(self):
@@ -540,9 +571,9 @@ class SendBudget(Resource):
         if not data:
             return {'message':'No data provided'}, 400
 
-        if TripStatusModel.find_by_newBudget(data['trip_id'],data['owner_id'],data['budget']):
+        if TripStatusModel.find_by_newBudget(data['ts_id'],data['trip_id'],data['owner_id']):
             
-            TripStatusModel.update_tableforSetBudget(data['trip_id'],data['budget'],data['owner_id'])
+            TripStatusModel.update_tableforSetBudget(data['ts_id'],data['trip_id'],data['budget'])
             
             trip_status_id = TripStatusModel.get_tripstatus_idbyRecord(data['trip_id'],data['owner_id'],data['budget'])
 
@@ -556,7 +587,7 @@ class SendBudget(Resource):
             try:
                 new_entry.save_to_db()
                 trip_status_id = TripStatusModel.get_tripstatus_idbyRecord(data['trip_id'],data['owner_id'],data['budget'])
-                return {'message':'success','trip_status_id': trip_status_id}
+                return {'message':'Trip budget is assinged','trip_status_id': trip_status_id}
             except Exception as e:
                 return {'message':'Something went wrong', 'error':e}
 

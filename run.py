@@ -61,15 +61,14 @@ api.add_resource(resources.AllTrips, '/trips')
 api.add_resource(resources.AllTripStatus, '/trip_status')
 
 
-					# FEEDBACK GET METHODS #					
-api.add_resource(resources.DriverFeedbackbyId, '/get_driver_feedback/<driver_id>')
-api.add_resource(resources.PassengerFeedbackbyId, '/get_passenger_feedback/<ps_id>')
+				# START TRIP #
+api.add_resource(resources.StartTrip, '/starttrip/<tsId>')
 
 					# GET TRIPS FOR OWNERS  #
 api.add_resource(resources.SendTripPlanToOwner, '/tripsby_owner/<ow_id>')
 
 					# GET TRIPS DETAILS BY ID #
-api.add_resource(resources.TripbyId, '/trip/<trip_id>')
+api.add_resource(resources.TripbyId, '/get_trip_details/<trip_id>')
 
 					# GET TRIP STATUS BY ID   #
 api.add_resource(resources.TripStatusById, '/trip_status/<trip_id>')
@@ -80,9 +79,26 @@ api.add_resource(resources.WaypointbyTrip, '/get_waypoints/<trip_id>')
 					# GET PICKUPLOCS #
 api.add_resource(resources.PickUpLocbyTrip, '/get_pickuplocs/<trip_id>')
 
-
 					# GET DRIVERS FOR OWNER#
 api.add_resource(resources.DriversforOwner, '/get_driversby_owner/<owId>')
+
+					# DRIVER CONFIRMS TRIP#
+api.add_resource(resources.DriverConfirmation, '/driver_confirm_trip/<tsId>/<drId>')
+
+					# PASSENGER CONFIRMS OFFER#
+api.add_resource(resources.PassengerConfirmation, '/passenger_confirm_trip/<tsId>')
+
+					#GET TRIPS ASSINGED TO DRIVER#
+api.add_resource(resources.GetAssingedTripsStatus, '/get_tripstatus_for_driver/<drId>')
+
+				# FINISH TRIP #
+api.add_resource(resources.FinishTrip,'/finishtrip/<tsId>/<drId>')
+
+					# DRIVER FEEDBACK #					
+api.add_resource(resources.DriverFeedbackbyId, '/get_driver_feedback/<driver_id>')
+					#PASSENGER FEEDBACK#
+api.add_resource(resources.PassengerFeedbackbyId, '/get_passenger_feedback/<ps_id>')
+
 
 #endregion
 
@@ -96,35 +112,46 @@ api.add_resource(resources.DriversforOwner, '/get_driversby_owner/<owId>')
 
 				# TRIP PLAN POST METHODS #
 api.add_resource(resources.CreateTripPlan, '/createTrip')
+
 api.add_resource(resources.AddWaypoints, '/add_waypoints')
+
 api.add_resource(resources.AddPickupLocations, '/add_pickuplocs')
+
+
+					# OWNERS POST METHODS #
+api.add_resource(resources.AssignDrivers, '/assignDrivers')
+
+api.add_resource(resources.SendBudget, '/sendBudget')
+
+				# FEEDBACK POST METHODS#
+api.add_resource(resources.CreatePassengerFeedback, '/set_passenger_feedback')
+
+api.add_resource(resources.CreateDriverFeedback, '/set_driver_feedback')
+
+
+				# PASSENGER REGISTRATION #
+api.add_resource(resources.PassengerRegistration, '/reg_passenger')
+
+				# OWNERS REGISTRATION #
+api.add_resource(resources.OwnerRegistration, '/reg_owner')
+
+				# DRIVER REGISTRATION #
+api.add_resource(resources.DriverRegistration, '/reg_driver')
+
+				# VEHICLE REGISTRATION #
+api.add_resource(resources.VehiclRegistration, '/reg_vehicle')
 
 
 					# USER REGISTRATION #
 api.add_resource(resources.UserRegistration, '/registration')
+
 api.add_resource(resources.UserLogin, '/login')
 
-api.add_resource(resources.PassengerRegistration, '/reg_passenger')
-api.add_resource(resources.OwnerRegistration, '/reg_owner')
-
 api.add_resource(resources.UserLogoutAccess, '/logout/access')
+
 api.add_resource(resources.UserLogoutRefresh, '/logout/refresh')
+
 api.add_resource(resources.TokenRefresh, '/token/refresh')
-
-					# OWNERS POST METHODS #
-api.add_resource(resources.AssignDrivers, '/assignDrivers')
-api.add_resource(resources.SendBudget, '/sendBudget')
-
-				# FEEDBACK POST METHODS#
-
-api.add_resource(resources.CreatePassengerFeedback, '/set_passenger_feedback')
-api.add_resource(resources.CreateDriverFeedback, '/set_driver_feedback')
-
-
-				# VEHICLE POST METHODS #
-#api.add_resource(resources.VehiclesforOwner, '/vehiclesforowner')
-
-
 
 
 
