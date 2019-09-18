@@ -1,6 +1,6 @@
 from datetime import datetime
 from run import db
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, load_only
 from sqlalchemy import Column, Integer, ForeignKey
 from flask import jsonify
 from passlib.hash import pbkdf2_sha256 as sha256
@@ -132,6 +132,7 @@ class OwnerModel(db.Model):
 	def get_ownerId(cls, user_name):
 		return cls.query.filter_by(owner_email = user_name).all()[0].ow_id
 
+
 #endregion
 
 #############################################################################################################
@@ -195,7 +196,11 @@ class DriverModel(db.Model):
 	def get_driverIdbyNIC(cls, nic):
 		return cls.query.filter_by(driver_nic = nic).all()[0].dr_id
 
-#endregion
+	@classmethod
+	def get_driversby_ownerId(cls, owId):
+		return cls.query.filter_by(owner_id = owId).all()
+
+#endregion Drier Model
 
 #############################################################################################################
 #												#----------------#										    #
@@ -267,6 +272,10 @@ class VehicleModel(db.Model):
 			return True
 		else:
 			return False
+
+	@classmethod
+	def vehicle_detailby_driver(cls, driverId):
+		return cls.query.filter_by(driver_id = driverId).all()
 
 #endregion
 

@@ -80,6 +80,10 @@ api.add_resource(resources.WaypointbyTrip, '/get_waypoints/<trip_id>')
 					# GET PICKUPLOCS #
 api.add_resource(resources.PickUpLocbyTrip, '/get_pickuplocs/<trip_id>')
 
+
+					# GET DRIVERS FOR OWNER#
+api.add_resource(resources.DriversforOwner, '/get_driversby_owner/<owId>')
+
 #endregion
 
 #############################################################################################################

@@ -253,7 +253,21 @@ class VehiclesforOwner(Resource):
         d3 = VehicleModel().driver_has_vehicle_byType(owner,v_type)
 
         return {'response': d3}
+
+class DriversforOwner(Resource):
+    def get(self, owId):
+
+        return_data = []
+        #dict= {'driver':[], 'vehicle': [], 'v_type':[]}
+
+        for driver in driver_schema.dump(DriverModel().get_driversby_ownerId(owId)):
+            
+            for vehicle in vehicle_schema.dump(VehicleModel().vehicle_detailby_driver(driver['dr_id'])):
+                return_data.append({'driver':driver['dr_id'], 'vehicle':vehicle['vehicle_type'], 'v_type':vehicle['vehicle_type']})
+
+        return return_data
 #endregion
+
 
 #############################################################################################################
 #                                        #------------------------#                                         #
@@ -305,7 +319,11 @@ class AllDrivers(Resource):
         res = driver_schema.dump(d1)
         return { 'drivers': res}
 
-#endregion
+# class AssignedToTrip(Resource):
+#     def get(self,):
+
+
+#endregion Driver Resource
 
 #############################################################################################################
 #                                        #------------------------#                                         #
@@ -424,8 +442,7 @@ class SendTripPlanToOwner(Resource):
 
         trip_plan_json = trips_plan_schema.dump(trip_by_area)
 
-        return_datas = {}
-        new_data    = []
+        return_data = []
 
         for index,trip in enumerate(trip_plan_json):
             trip_details = self.get_tripDetails(trip['trip_id'])
@@ -435,15 +452,17 @@ class SendTripPlanToOwner(Resource):
                     VehicleModel().driver_has_vehicle_byAC(owId, details['ac_condition']) and 
                     VehicleModel().driver_has_vehicle_byType(owId, details['vehicle_type'])):
 
-                    new_data.append(True)
-                    new_data.append(trip['trip_id'])
+                    return_data.append({
+                        'is_ok': True,
+                        'trip': trip['trip_id']
+                    })
                     break                    
                 else:
-                    new_data.append(False)
-                    new_data.append(trip['trip_id'])
+                    return_data.append({
+                        'is_ok': False,
+                        'trip': trip['trip_id']
+                    })
                     break
-                    
-        return_data = new_data
 
         return return_data
 
