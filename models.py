@@ -132,7 +132,13 @@ class OwnerModel(db.Model):
 	def get_ownerId(cls, user_name):
 		return cls.query.filter_by(owner_email = user_name).all()[0].ow_id
 
-
+	@classmethod
+	def is_owner(cls, owId):
+		if cls.query.filter_by(ow_id = owId).scalar() is not None:
+			return True
+		else:
+			return False
+		
 #endregion
 
 #############################################################################################################

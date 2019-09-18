@@ -1,7 +1,7 @@
 #region IMPORTS
 import json
 from flask_restful import Resource, reqparse,inputs
-from flask import request
+from flask import request, jsonify
 from flask_jwt_extended import (
     create_access_token, create_refresh_token, jwt_required, 
     jwt_refresh_token_required, get_jwt_identity, get_raw_jwt)
@@ -230,9 +230,7 @@ class OwnerRegistration(Resource):
 
 class AllOwners(Resource):
     def get(self):
-        d1 = OwnerModel().return_all()
-        print(d1)
-        res = owner_schema.dump(d1)
+        res = owner_schema.dump(OwnerModel().return_all())
         return { 'owners': res}
 
 class AreaforOwner(Resource):
@@ -240,30 +238,20 @@ class AreaforOwner(Resource):
         d1 = OwnerModel().get_area(ow_id)
         return {'area': d1}
 
-class VehiclesforOwner(Resource):
-    def post(self):
-
-        data = request.get_json(force=True)
-
-        owner   = data['ow_id']
-        v_type= data['v_type']
-
-        #d1 = VehicleModel().driver_has_vehicle_byLoad(owner,capacity)
-        #d2 = VehicleModel().driver_has_vehicle_byAC(owner,ac)
-        d3 = VehicleModel().driver_has_vehicle_byType(owner,v_type)
-
-        return {'response': d3}
-
 class DriversforOwner(Resource):
     def get(self, owId):
 
         return_data = []
-        #dict= {'driver':[], 'vehicle': [], 'v_type':[]}
 
         for driver in driver_schema.dump(DriverModel().get_driversby_ownerId(owId)):
             
             for vehicle in vehicle_schema.dump(VehicleModel().vehicle_detailby_driver(driver['dr_id'])):
-                return_data.append({'driver':driver['dr_id'], 'vehicle':vehicle['vehicle_type'], 'v_type':vehicle['vehicle_type']})
+                return_data.append({
+                    'driver':driver['dr_id'],
+                    'vehicle':vehicle['vehicle_type'],
+                    'v_type':vehicle['vehicle_type'],
+                    'ac_condition':vehicle['ac_condition']
+                    })
 
         return return_data
 #endregion
@@ -424,12 +412,22 @@ class TripbyId(Resource):
 
 class SendTripPlanToOwner(Resource):
     def get(self, ow_id):
-        res = self.owner_suitsfor_trip(ow_id)
 
-        for item in res:
-            print('for loop',item)
+        trips_detail = []
 
-        return res
+        if OwnerModel().is_owner(ow_id):
+            result = self.owner_suitsfor_trip(ow_id)
+            print('Results',result)
+
+            for item in result:
+                if item['is_ok']:    
+                    res2 = trips_plan_schema.dump(TripPlanModel().find_by_trip_id(item['trip']))
+                    trips_detail.append({'trip':res2})
+                
+            return jsonify(trips_detail)
+        else:
+            return {'message':'No trips for you !'}
+
 
     def get_tripDetails(self, trip_id):
         return trips_plan_schema.dump(TripPlanModel().find_by_trip_id(trip_id))
@@ -444,9 +442,9 @@ class SendTripPlanToOwner(Resource):
 
         return_data = []
 
-        for index,trip in enumerate(trip_plan_json):
+        for trip in trip_plan_json:
             trip_details = self.get_tripDetails(trip['trip_id'])
-
+            
             for details in trip_details:
                 if (VehicleModel().driver_has_vehicle_byLoad(owId, details['no_of_passengers']) and 
                     VehicleModel().driver_has_vehicle_byAC(owId, details['ac_condition']) and 

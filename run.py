@@ -66,7 +66,7 @@ api.add_resource(resources.DriverFeedbackbyId, '/get_driver_feedback/<driver_id>
 api.add_resource(resources.PassengerFeedbackbyId, '/get_passenger_feedback/<ps_id>')
 
 					# GET TRIPS FOR OWNERS  #
-api.add_resource(resources.SendTripPlanToOwner, '/tripsforowner/<ow_id>')
+api.add_resource(resources.SendTripPlanToOwner, '/tripsby_owner/<ow_id>')
 
 					# GET TRIPS DETAILS BY ID #
 api.add_resource(resources.TripbyId, '/trip/<trip_id>')
@@ -122,7 +122,7 @@ api.add_resource(resources.CreateDriverFeedback, '/set_driver_feedback')
 
 
 				# VEHICLE POST METHODS #
-api.add_resource(resources.VehiclesforOwner, '/vehiclesforowner')
+#api.add_resource(resources.VehiclesforOwner, '/vehiclesforowner')
 
 
 
