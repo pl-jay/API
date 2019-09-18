@@ -69,6 +69,15 @@ class PassengerModel(db.Model):
 	def get_passengerId(cls, username):
 		return cls.query.filter_by(passenger_email = username).all()[0].ps_id
 
+	@classmethod
+	def update_token(cls,psId,token):
+		if cls.query.filter_by(ps_id = psId).scalar() is not None:
+			new_record = cls.query.filter_by(ps_id = psId).first()
+			new_record.ps_token_id = token
+			db.session.commit()
+			return True
+		else:
+			return False
 #endregion
 
 #############################################################################################################
@@ -138,7 +147,16 @@ class OwnerModel(db.Model):
 			return True
 		else:
 			return False
-		
+
+	@classmethod
+	def update_token(cls,owId,token):
+		if cls.query.filter_by(ow_id = owId).scalar() is not None:
+			new_record = cls.query.filter_by(ow_id = owId).first()
+			new_record.ow_token_id = token
+			db.session.commit()
+			return True
+		else:
+			return False	
 #endregion
 
 #############################################################################################################
@@ -231,8 +249,15 @@ class DriverModel(db.Model):
 			else:
 				print('driver iner 2 else')
 				return False
-			
-
+	@classmethod
+	def update_token(cls,drId,token):
+		if cls.query.filter_by(dr_id = drId).scalar() is not None:
+			new_record = cls.query.filter_by(dr_id = drId).first()
+			new_record.dr_token_id = token
+			db.session.commit()
+			return True
+		else:
+			return False
 #endregion Driver Model
 
 #############################################################################################################

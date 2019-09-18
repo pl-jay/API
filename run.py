@@ -89,7 +89,7 @@ api.add_resource(resources.DriverConfirmation, '/driver_confirm_trip/<tsId>/<drI
 api.add_resource(resources.PassengerConfirmation, '/passenger_confirm_trip/<tsId>')
 
 					#GET TRIPS ASSINGED TO DRIVER#
-api.add_resource(resources.GetAssingedTripsStatus, '/TRIP_DETAILS/get_tripstatus_for_driver/<drId>')
+api.add_resource(resources.GetAssingedTripsStatus, '/get_tripstatus_for_driver/<drId>')
 
 				# FINISH TRIP #
 api.add_resource(resources.FinishTrip,'/finishtrip/<tsId>/<drId>')

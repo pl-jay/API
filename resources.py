@@ -79,22 +79,23 @@ class UserLogin(Resource):
 
         user_role = UserModel.get_user_role(username)
         
-        if user_role == 'passenger':
-            userId = PassengerModel.get_passengerId(username)
-            print('passenger')
-        if user_role == 'driver':
-            userId = DriverModel.get_driverIdbyNIC(username)
-            print('driver')
-        if user_role == 'owner':
-            userId = OwnerModel.get_ownerId(username)
-            print('owner')       
-
         if UserModel.verify_hash(data['password'], current_user.password):
 
             genr_access_token  = create_access_token(identity = username)
             genr_refresh_token = create_refresh_token(identity = username)
             
             UserModel.update_table(username, genr_access_token, genr_refresh_token)
+
+            if user_role == 'passenger':
+                userId = PassengerModel.get_passengerId(username)
+                PassengerModel.update_token(userId,genr_access_token)
+            if user_role == 'driver':
+                userId = DriverModel.get_driverIdbyNIC(username)
+                DriverModel.update_token(userId,genr_access_token)
+            if user_role == 'owner':
+                userId = OwnerModel.get_ownerId(username)
+                OwnerModel.update_token(userId,genr_access_token)
+
             
             return {
                 'message': 'Logged in as {}'.format(current_user.username),
@@ -189,9 +190,7 @@ class PassengerConfirmation(Resource):
     def get(self,tsId):
         return TripStatusModel().passenger_confirmed(tsId)
 
-class OffersForTrip(Resource):
-    def get(self, tripId, psId):
-        
+
 #endregion
 
 #############################################################################################################
@@ -345,10 +344,8 @@ class FinishTrip(Resource):
         if (TripStatusModel().set_trip_status(tsId,False,True) 
             and DriverModel().set_isOnTrip(drId,False,True)
             and VehicleModel().set_isOnTrip(drId,False,True)):
-            print('inside if Resource')
             return True
         else:
-            print('inside else Resource')
             return False
 
 class StartTrip(Resource):
