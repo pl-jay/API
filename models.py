@@ -233,7 +233,7 @@ class DriverModel(db.Model):
 				return False
 			
 
-#endregion Drier Model
+#endregion Driver Model
 
 #############################################################################################################
 #												#----------------#										    #
@@ -408,6 +408,7 @@ class TripPlanModel(db.Model):
 #############################################################################################################
 
 #region Trip Status Model
+
 class TripStatusModel(db.Model):
 	
 	__tablename__ = 'tripstatus'
@@ -434,7 +435,11 @@ class TripStatusModel(db.Model):
 
 	@classmethod
 	def return_all(cls):
-		return TripStatusModel.query.all()
+		return cls.query.all()
+
+	@classmethod
+	def find_by_tripId(cls,trip):
+		return cls.query.filter_by(trip_id = trip).all()
 
 	@classmethod
 	def delete_all(cls):
@@ -535,14 +540,14 @@ class TripStatusModel(db.Model):
 
 	@classmethod
 	def set_trip_status(cls,tsId,set_value,unset_value):
-		if cls.query.filter_by(ts_id =tsId) \
+		if set_value:
+			print('inner if shit 1')
+			if cls.query.filter_by(ts_id =tsId) \
 			.filter_by(trip_started = False) \
 			.filter_by(trip_finished = False) \
 			.filter_by(is_confirmed_passenger = True) \
 			.filter_by(is_confirmed_driver = True) \
 			.scalar() is not None:
-
-			if set_value:
 				print('outer if')
 				if cls.query.filter_by(ts_id =tsId).filter_by(trip_started = False).filter_by(trip_finished = False).scalar() is not None:
 					print('inner if')
@@ -553,8 +558,18 @@ class TripStatusModel(db.Model):
 				else:
 					print('outer shit')
 					return False
+			else:
+				print('outer else 1')
+				return False
 
-			if unset_value:
+		if unset_value:
+			print('inner if shit 2')
+			if cls.query.filter_by(ts_id =tsId) \
+			.filter_by(trip_started = True) \
+			.filter_by(trip_finished = False) \
+			.filter_by(is_confirmed_passenger = True) \
+			.filter_by(is_confirmed_driver = True) \
+			.scalar() is not None:
 				print('outer if2 shit')
 				if cls.query.filter_by(ts_id = tsId).filter_by(trip_started = True).filter_by(trip_finished = False).scalar() is not None:
 					print('inner if')
@@ -565,8 +580,9 @@ class TripStatusModel(db.Model):
 				else:
 					print('outer 2 if')
 					return False
-		else:
-			return False
+			else:
+				print('outer 2 else')
+				return False
 
 #endregion TripStatus Model
 

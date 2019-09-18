@@ -89,7 +89,7 @@ api.add_resource(resources.DriverConfirmation, '/driver_confirm_trip/<tsId>/<drI
 api.add_resource(resources.PassengerConfirmation, '/passenger_confirm_trip/<tsId>')
 
 					#GET TRIPS ASSINGED TO DRIVER#
-api.add_resource(resources.GetAssingedTripsStatus, '/get_tripstatus_for_driver/<drId>')
+api.add_resource(resources.GetAssingedTripsStatus, '/TRIP_DETAILS/get_tripstatus_for_driver/<drId>')
 
 				# FINISH TRIP #
 api.add_resource(resources.FinishTrip,'/finishtrip/<tsId>/<drId>')
@@ -113,21 +113,21 @@ api.add_resource(resources.PassengerFeedbackbyId, '/get_passenger_feedback/<ps_i
 				# TRIP PLAN POST METHODS #
 api.add_resource(resources.CreateTripPlan, '/createTrip')
 
+				# ADD WAYPOINTS #
 api.add_resource(resources.AddWaypoints, '/add_waypoints')
-
+				# ADD PICKUP LOCATIONS #
 api.add_resource(resources.AddPickupLocations, '/add_pickuplocs')
 
-
-					# OWNERS POST METHODS #
+				# OWNERS POST METHODS #
 api.add_resource(resources.AssignDrivers, '/assignDrivers')
 
+				# SEND BUDGET #
 api.add_resource(resources.SendBudget, '/sendBudget')
 
 				# FEEDBACK POST METHODS#
 api.add_resource(resources.CreatePassengerFeedback, '/set_passenger_feedback')
 
 api.add_resource(resources.CreateDriverFeedback, '/set_driver_feedback')
-
 
 				# PASSENGER REGISTRATION #
 api.add_resource(resources.PassengerRegistration, '/reg_passenger')

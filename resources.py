@@ -189,6 +189,9 @@ class PassengerConfirmation(Resource):
     def get(self,tsId):
         return TripStatusModel().passenger_confirmed(tsId)
 
+class OffersForTrip(Resource):
+    def get(self, tripId, psId):
+        
 #endregion
 
 #############################################################################################################
@@ -228,7 +231,6 @@ class OwnerRegistration(Resource):
             return {'message': 'owner {} created'.format(data['owner_name'])}
         except Exception as e:
             return {'message': 'Something went wrong', 'error': e, 'data': new_owner}, 500
-
 
 class AllOwners(Resource):
     def get(self):
@@ -339,11 +341,14 @@ class GetTripDetails(Resource):
 
 class FinishTrip(Resource):
     def get(self, tsId, drId):
+        print('finish trip shit')
         if (TripStatusModel().set_trip_status(tsId,False,True) 
             and DriverModel().set_isOnTrip(drId,False,True)
             and VehicleModel().set_isOnTrip(drId,False,True)):
+            print('inside if Resource')
             return True
         else:
+            print('inside else Resource')
             return False
 
 class StartTrip(Resource):
@@ -439,7 +444,7 @@ class CreateTripPlan(Resource):
 
 class AllTrips(Resource):
     def get(self):
-        res = trip_plan_schema.dump(TripPlanModel().return_all())
+        res = trips_plan_schema.dump(TripPlanModel().return_all())
         return { 'trip_plans': res}
 
 class TripbyId(Resource):
