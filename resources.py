@@ -46,25 +46,71 @@ class UserRegistration(Resource):
     def post(self):
         data = request.get_json(force=True)
         
+
         if not data:
             return {'message':'No input data provided'}, 400
 
-        if UserModel.find_by_username(data['username']):
-            return {'message': 'User {} already exists'.format(data['username'])}
         
+        
+        if (UserModel.find_by_username(data['email'])):
+            
+            return {'message': 'User {} already exists'.format(data['email'])}
+
         new_user = UserModel(
-            username = data['username'],
+            username = data['email'],
             password = UserModel.generate_hash(data['password']),
             user_role = data['user_role']
         )
-
+        
         try:
             new_user.save_to_db()
-            return { 'message': 'success' }
+
+            if (data['user_role'] == 'passenger'):
+                
+            
+                new_passenger = PassengerModel(
+                    passenger_name = data['username'],
+                    passenger_email = data['email']
+                )
+            
+                try:
+                    print('passenger_email try ')
+                    new_passenger.save_to_db()
+                    return {'success':1}
+
+                except Exception as e:
+                    return {'message': 'Something went wrong','error': e}, 500
+
+            if (data['user_role'] == 'owner'):
+                
+            
+                new_owner = OwnerModel(
+                    owner_name = data['username'],
+                    owner_email = data['email'],
+                    owner_nic = "0000",
+                    address = "owner adrs",
+                    area   = "area",
+                    service_type = "service_type",
+                    company_name = "company_name",
+                )
+            
+                try:
+                    new_owner.save_to_db()
+                    return {'success':1}
+
+                except Exception as e:
+                    return {'message': 'Something went wrong','error': e}, 500
+
+            
+
+            return {'success':1}
+
+
 
         except Exception as e:
             return {'message': 'Something went wrong','error': e}, 500
 
+        
 class UserLogin(Resource):
     def post(self):
         
@@ -98,7 +144,7 @@ class UserLogin(Resource):
 
             
             return {
-                'message': 'Logged in as {}'.format(current_user.username),
+                'success':1,
                 'access_token': genr_access_token,
                 'refresh_token': genr_refresh_token,
                 'user_id': userId
@@ -166,11 +212,9 @@ class PassengerRegistration(Resource):
             return {'message': 'User {} already exists'.format(data['passenger_name'])}
 
         new_passenger = PassengerModel(
-            ps_token_id     = data['ps_token_id'],
             passenger_name  = data['passenger_name'],
             passenger_email = data['passenger_email'],
-            prof_pic        = data['prof_pic'],
-            is_ontrip       = data['is_ontrip']
+            prof_pic        = data['prof_pic']
         )
 
         try:
@@ -211,16 +255,14 @@ class OwnerRegistration(Resource):
         if OwnerModel.find_by_nic(data['owner_nic']):
             return {'message': 'Owner {} already exists'.format(data['owner_nic'])}
 
-        new_owner = OwnerModel(
-            ow_token_id  = data['ow_token_id'],
+        new_owner = OwnerModel( 
             owner_name   = data['owner_name'],
             owner_nic    = data['owner_nic'],
             contact_num  = data['contact_num'],
             address      = data['address'],
             area         = data['area'],
             service_type = data['service_type'],
-            company_name = data['company_name'],
-            prof_pic     = data['prof_pic']
+            company_name = data['company_name']
         )
         
         print(new_owner)
@@ -262,6 +304,10 @@ class DriversforOwner(Resource):
 
         return return_data
 
+class DriversbyOwner(Resource):
+    def get(self, owId):
+        return driver_schema.dump(DriverModel().get_driversby_ownerId(owId))
+
 #endregion
 
 
@@ -288,14 +334,12 @@ class DriverRegistration(Resource):
             return {'message': 'Driver {} already exists'.format(data['driver_email'])}
 
         new_driver = DriverModel(
-            dr_token_id  = data['dr_token_id'],
             driver_name   = data['driver_name'],
             driver_email    = data['driver_email'],
             owner_id  = data['owner_id'],
             license      = data['license'],
             driver_nic         = data['driver_nic'],
             contact_num = data['contact_num'],
-            is_ontrip = data['is_ontrip'],
             prof_pic     = data['prof_pic']
         )
         
@@ -315,11 +359,14 @@ class AllDrivers(Resource):
 
 class DriverConfirmation(Resource):
     def get(self, tsId, drId):
-        if(DriverModel().set_isOnTrip(drId,True,False)
-            and VehicleModel().set_isOnTrip(drId,True,False)
-            and TripStatusModel().driver_confirmed(tsId)):
+        if TripStatusModel().trip_is_confirmed(tsId):
+            if(DriverModel().set_isOnTrip(drId,True,False)
+                and VehicleModel().set_isOnTrip(drId,True,False)
+                and TripStatusModel().driver_confirmed(tsId)):
 
-            return True
+                return True
+            else:
+                return False
         else:
             return False
 
@@ -327,9 +374,16 @@ class GetAssingedTripsStatus(Resource):
     def get(self, drId):
 
         if TripStatusModel().trips_available_for_driver(drId):
+            
+            trip_id = TripStatusModel().trip_id_for_driver(drId)
+            print('tripId',trip_id)
+            trips_detail = trips_plan_schema.dump(TripPlanModel().find_by_trip_id(trip_id))
+            
+            print(trips_detail)
+
             return {
             'trip_status_id':TripStatusModel().tripstatus_for_driver(drId),
-            'trip_id':TripStatusModel().trip_id_for_driver(drId)}
+            'trips_detail':trips_detail}
         else:
             print('else')
             return{'message':'no trips for you !'}
@@ -418,6 +472,10 @@ class CreateTripPlan(Resource):
     def post(self):
         data = request.get_json(force=True)
 
+        #res = trips_plan_schema.load(json.loads(json.dumps(data)))
+
+        print(data)
+
         if not data:
             return {'message':'No data provided'}, 400
 
@@ -426,18 +484,19 @@ class CreateTripPlan(Resource):
             no_of_passengers   = data['no_of_passengers'],
             date_from    = data['date_from'],
             date_to  = data['date_to'],
-            pickup_loc      = data['pickup_loc'],
+            pickup_time = data['pickup_time'],
+            pickup_loc      = data['start_location'],
+            waypoint    = data['waypoint'],
             ac_condition = data['ac_condition'],
             destination = data['destination'],
             passenger_id = data['passenger_id'],
-            description = data['description']
+            description = data['trip_description']
         )
-        
         try:
             new_trip.save_to_db()
-            return {'message': 'Trip Plan created for here {}'.format(data['destination'])}
+            return {'trip_id': new_trip.trip_id}
         except Exception as e:
-            return {'message': 'Something went wrong', 'error': e, 'data': new_trip}, 500
+            return {'message': 'Something went wrong', 'error': e}, 500
 
 class AllTrips(Resource):
     def get(self):
@@ -454,16 +513,18 @@ class SendTripPlanToOwner(Resource):
 
         trips_detail = []
 
+        print('SINGLE TRIP',trip_plan_schema.dump(TripPlanModel.findtrip_by_id(2)))
+
         if OwnerModel().is_owner(ow_id):
             result = self.owner_suitsfor_trip(ow_id)
             print('Results',result)
 
             for item in result:
-                if item['is_ok']:    
-                    res2 = trips_plan_schema.dump(TripPlanModel().find_by_trip_id(item['trip']))
-                    trips_detail.append({'trip':res2})
-                
-            return jsonify(trips_detail)
+                if item['is_ok']:
+                    #trips_detail.append(trips_plan_schema.dump(TripPlanModel().find_by_trip_id(item['trip'])))
+                    trips_detail.append(trip_plan_schema.dump(TripPlanModel.findtrip_by_id(item['trip'])))
+            print(trips_detail)
+            return trips_detail
         else:
             return {'message':'No trips for you !'}
 
@@ -546,9 +607,29 @@ class AllTripStatus(Resource):
 
 class TripStatusById(Resource):
     def get(self, trip_id):
-        d1 = TripStatusModel.find_by_tripId(trip_id)
-        res = trip_status_schema.dump(d1)
-        return { 'trip_status': res}
+
+        bid_details = []
+
+        for ts in trip_status_schema.dump(TripStatusModel.find_by_tripId(trip_id)):
+            print(ts)
+            for owner in owner_schema.dump(OwnerModel().find_by_id(ts['owner_id'])):
+                print(ts['owner_id'],ts['assigned_driver'])
+
+                for vehicle in vehicle_schema.dump(VehicleModel().vehicle_detailsby_id(ts['assigned_driver'])):
+                    print(vehicle['vehicle_type'])
+
+                    bid_details.append({
+                        'ts_id': ts['ts_id'],
+                        'company_name': owner['company_name'],
+                        'area': owner['area'],
+                        'contact': owner['contact_num'],
+                        'budget': ts['trip_budget'],
+                        'v_type': vehicle['vehicle_type'],
+                        'v_brand': vehicle['vehicle_brand'],
+                        'driver': ts['assigned_driver']
+                        })
+        print(bid_details)
+        return bid_details
 
 class AssignDrivers(Resource):
     def post(self):
@@ -573,13 +654,14 @@ class SendBudget(Resource):
         if not data:
             return {'message':'No data provided'}, 400
 
-        if TripStatusModel.find_by_newBudget(data['ts_id'],data['trip_id'],data['owner_id']):
-            
-            TripStatusModel.update_tableforSetBudget(data['ts_id'],data['trip_id'],data['budget'])
-            
-            trip_status_id = TripStatusModel.get_tripstatus_idbyRecord(data['trip_id'],data['owner_id'],data['budget'])
+        if data['ts_id']:
+            if TripStatusModel.find_by_newBudget(data['ts_id'],data['trip_id'],data['owner_id']):
+                
+                TripStatusModel.update_tableforSetBudget(data['ts_id'],data['trip_id'],data['budget'])
+                
+                trip_status_id = TripStatusModel.get_tripstatus_idbyRecord(data['trip_id'],data['owner_id'],data['budget'])
 
-            return {'message':'Trip budget is set','trip_status_id': trip_status_id}
+                return {'message':'Trip budget is set','trip_status_id': trip_status_id}
         else:
             new_entry = TripStatusModel(
                 trip_id     = data['trip_id'],

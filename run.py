@@ -59,6 +59,7 @@ api.add_resource(resources.AllDrivers, '/drivers')
 api.add_resource(resources.AllVehicles, '/vehicles')
 api.add_resource(resources.AllTrips, '/trips')
 api.add_resource(resources.AllTripStatus, '/trip_status')
+api.add_resource(resources.DriversbyOwner, '/drivers/<owId>')
 
 
 				# START TRIP #

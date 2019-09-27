@@ -17,7 +17,7 @@ class PassengerModel(db.Model):
 	__table_args__ = {'extend_existing': True}
 
 	ps_id 		   = db.Column(db.Integer, primary_key=True, autoincrement=True)
-	ps_token_id    = db.Column(db.String(120),unique=True, nullable=False)
+	ps_token_id    = db.Column(db.String(120),unique=True, nullable=True)
 	passenger_name = db.Column(db.String(50), nullable=False)
 	passenger_email= db.Column(db.String(120), nullable=False)
 	prof_pic 	   = db.Column(db.String(120), nullable=True)
@@ -119,9 +119,8 @@ class OwnerModel(db.Model):
 		return OwnerModel.query.all()
 
 	@classmethod
-	def find_by_nic(cls, nic):
-		res = cls.query.filter_by(owner_nic = nic).all()
-		
+	def find_by_id(cls, owId):
+		return cls.query.filter_by(ow_id = owId).all()
 
 	@classmethod
 	def get_area(cls, owner_id):
@@ -362,8 +361,9 @@ class VehicleModel(db.Model):
 				print('vehicle iner 2 else')
 				return False
 
-
-
+	@classmethod
+	def vehicle_detailsby_id(cls, drId):
+		return cls.query.filter_by(driver_id = drId).all()
 
 #endregion Vehicle Model
 
@@ -383,7 +383,9 @@ class TripPlanModel(db.Model):
 	no_of_passengers = db.Column(db.Integer)
 	date_from		 = db.Column(db.String(50))
 	date_to			 = db.Column(db.String(50))
+	pickup_time		 = db.Column(db.String(50))
 	pickup_loc	 	 = db.Column(db.String(50))
+	waypoint 		 = db.Column(db.String(50))
 	ac_condition	 = db.Column(db.Boolean)
 	destination		 = db.Column(db.String(120))
 	passenger_id	 = db.Column(db.Integer, ForeignKey('passenger.ps_id'))
@@ -409,6 +411,10 @@ class TripPlanModel(db.Model):
 	def find_by_trip_id(cls, trip_id):
 		return cls.query.filter_by(trip_id = trip_id).all()	
 
+	@classmethod
+	def findtrip_by_id(cls, tripId):
+		return cls.query.filter_by(trip_id = tripId).first()
+		
 	@classmethod
 	def delete_all(cls):
 		try:
@@ -465,6 +471,10 @@ class TripStatusModel(db.Model):
 	@classmethod
 	def find_by_tripId(cls,trip):
 		return cls.query.filter_by(trip_id = trip).all()
+
+	@classmethod
+	def status_idby_tripId(cls,trip):
+		return cls.query.filter_by(trip_id = trip).all()[0].ts_id
 
 	@classmethod
 	def delete_all(cls):
@@ -554,14 +564,22 @@ class TripStatusModel(db.Model):
 
 	@classmethod
 	def trips_available_for_driver(cls, drId):
-		if cls.query.filter_by(assigned_driver = drId).scalar() is not None:
+		print('OH NO')
+		if cls.query.filter_by(assigned_driver = drId).filter_by(is_confirmed_driver = False).filter_by(is_confirmed_passenger = True).scalar() is not None:
+			
+			print('OH NO, ITs IF')
 			return True
 		else:
+			print('OH NO it is ELSE')
 			return False
 
 	@classmethod
 	def trip_id_for_driver(cls, drId):
 		return cls.query.filter_by(assigned_driver = drId).all()[0].trip_id
+
+	@classmethod
+	def trip_is_confirmed(cls,tsId):
+		return cls.query.filter_by(ts_id = tsId).scalar() is not None
 
 	@classmethod
 	def set_trip_status(cls,tsId,set_value,unset_value):
