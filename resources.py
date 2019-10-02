@@ -1,10 +1,13 @@
 #region IMPORTS
 import json
+import werkzeug, os
 from flask_restful import Resource, reqparse,inputs
 from flask import request, jsonify
 from flask_jwt_extended import (
     create_access_token, create_refresh_token, jwt_required, 
     jwt_refresh_token_required, get_jwt_identity, get_raw_jwt)
+
+from werkzeug.utils import secure_filename
 
 from models import (
     PassengerModel,OwnerModel,DriverModel,
@@ -246,14 +249,8 @@ class PassengerConfirmation(Resource):
 #region Owner Resources
 
 class OwnerRegistration(Resource):
-    def post(self):
+    def post(self,):
         data = request.get_json(force=True)
-
-        if not data:
-            return {'message':'No data provided'}, 400
-
-        if OwnerModel.find_by_nic(data['owner_nic']):
-            return {'message': 'Owner {} already exists'.format(data['owner_nic'])}
 
         new_owner = OwnerModel( 
             owner_name   = data['owner_name'],
@@ -262,8 +259,21 @@ class OwnerRegistration(Resource):
             address      = data['address'],
             area         = data['area'],
             service_type = data['service_type'],
-            company_name = data['company_name']
+            company_name = data['company_name'],
+            owner_nic_pic= data['owner_nic_pic'],
+            owner_cmp_pic= data['owner_cmp_pic'],
+            owner_cmp_registration_doc= data['owner_cmp_registration_doc']
         )
+
+        if not data:
+            return {'message':'No data provided'}, 400
+
+        if OwnerModel.find_by_id(data['ow_id']):
+            if OwnerModel.update_owner_details(data['ow_id'], new_owner):
+                return {'message':'details updated'}
+            return {'message': 'Owner {} already exists'.format(data['ow_id'])}
+
+        
         
         print(new_owner)
 
@@ -308,6 +318,11 @@ class DriversbyOwner(Resource):
     def get(self, owId):
         return driver_schema.dump(DriverModel().get_driversby_ownerId(owId))
 
+
+class OwnerDetails(Resource):
+    def get(slef, owId):
+        return owner_schema.dump(OwnerModel().owner_detials(owId))
+
 #endregion
 
 
@@ -340,7 +355,9 @@ class DriverRegistration(Resource):
             license      = data['license'],
             driver_nic         = data['driver_nic'],
             contact_num = data['contact_num'],
-            prof_pic     = data['prof_pic']
+            prof_pic     = data['prof_pic'],
+            drivin_license_pic = data['drivin_license_pic'],
+            driver_nic_pic = data['driver_nic_pic']
         )
         
         print(new_driver)
@@ -427,23 +444,29 @@ class VehiclRegistration(Resource):
             return {'message':'No data provided'}, 400
 
         
-        if VehicleModel.find_by_vehicle_reg_number(data['vehicle_reg_number']):
-            return {'message': 'Vehicle {} already exists'.format(data['vehicle_reg_number'])}
+        if VehicleModel.find_by_vehicle_reg_number(data['vehicle_reg']):
+            return {'message': 'Vehicle {} already exists'.format(data['vehicle_reg'])}
 
         new_vehicle = VehicleModel(
-            vehicle_reg_number  = data['vehicle_reg_number'],
+            vehicle_reg_number  = data['vehicle_reg'],
             owner_id   = data['owner_id'],
+            driver_id  = data['driver_id'],
             ac_condition    = data['ac_condition'],
-            vehicle_brand  = data['vehicle_brand'],
-            vehicle_type      = data['vehicle_type'],
-            no_of_passengers         = data['no_of_passengers'],
-            insurance_data = data['insurance_data'],
-            is_ontrip = data['is_ontrip']
+            vehicle_brand  = data['v_brand'],
+            vehicle_type      = data['v_type'],
+            no_of_passengers         = data['capacity'],
+            insurance_data = data['insurance'],
+            is_ontrip = 0,
+            vehicle_insu_pic = data['vehicle_insu_pic'],
+            vehicle_incomdoc_pic = data['vehicle_incomdoc_pic'],
+            vehicle_front_pic = data['vehicle_front_pic'],
+            vehicle_rear_pic = data['vehicle_rear_pic'],
+            vehicle_inside_pic = data['vehicle_inside_pic']
         )
 
         try:
             new_vehicle.save_to_db()
-            return {'message': 'Vehicle {} created'.format(data['vehicle_reg_number'])}
+            return {'message': 'Vehicle {} created'.format(data['vehicle_reg'])}
         except Exception as e:
             return {'message': 'Something went wrong', 'error': e, 'data': new_vehicle}, 500
 
@@ -454,6 +477,11 @@ class AllVehicles(Resource):
         print(d1)
         res = vehicle_schema.dump(d1)
         return { 'vehicle': res}
+
+class VehiclesbyOwner(Resource):
+    def get(self, owId):
+        data = vehicle_schema.dump(VehicleModel().vehicle_detailsby_owner(owId))
+        return data
 
 
 #endregion
@@ -546,7 +574,7 @@ class SendTripPlanToOwner(Resource):
             trip_details = self.get_tripDetails(trip['trip_id'])
             
             for details in trip_details:
-                if (VehicleModel().driver_has_vehicle_byLoad(owId, details['no_of_passengers']) and 
+                if (VehicleModel().driver_has_vehicle_byLoad(owId, details['no_of_passengers']) or 
                     VehicleModel().driver_has_vehicle_byAC(owId, details['ac_condition']) and 
                     VehicleModel().driver_has_vehicle_byType(owId, details['vehicle_type'])):
 
@@ -830,6 +858,53 @@ class PassengerFeedbackbyId(Resource):
         return { 'passenger_feedback': res}
 
 #endregion
+
+
+
+class ImageUpload(Resource):
+
+    def allowed_file(self,filename):
+        ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+    def post(self, ownerId):
+        parser = reqparse.RequestParser()
+        parser.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files')
+        args = parser.parse_args()
+        
+        
+        if 'file' not in args:
+            return {'message':'error'}
+
+        imageFile = args['file']
+        
+
+        if imageFile and self.allowed_file(secure_filename(imageFile.filename)):
+
+            path = 'static/img/owner_'+str(ownerId)
+
+            UPLOAD_FOLDER = os.path.join(os.getcwd(), path)
+
+            if not os.path.exists(path):
+                try:
+                    os.mkdir(path)
+                    UPLOAD_FOLDER = os.path.join(os.getcwd(), path)
+                except OSError as e:
+                    print(e)
+                else:
+                    print('success')
+
+            imageFile.save(os.path.join(UPLOAD_FOLDER,secure_filename(imageFile.filename)))
+
+            directory = os.path.join(UPLOAD_FOLDER,secure_filename(imageFile.filename))
+
+            return {'message':'success', 'dir': directory}
+
+
+
+
+
+
 
 #############################################################################################################
 #                                       #------------------------#                                          #

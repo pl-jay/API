@@ -103,6 +103,9 @@ class OwnerModel(db.Model):
 	service_type = db.Column(db.String(60), nullable=False)
 	company_name = db.Column(db.String(100), nullable=False)
 	prof_pic     = db.Column(db.String(100), nullable=True)
+	owner_nic_pic   = db.Column(db.String(150), nullable=True)
+	owner_cmp_pic	= db.Column(db.String(150), nullable=True)
+	owner_cmp_registration_doc	= db.Column(db.String(150), nullable=True)
 	created 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
 	updated 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
 
@@ -156,6 +159,33 @@ class OwnerModel(db.Model):
 			return True
 		else:
 			return False	
+
+	@classmethod
+	def owner_detials(cls, owId):
+		return cls.query.filter_by(ow_id = owId).all()
+
+	@classmethod
+	def find_by_id(cls, ID):
+		return cls.query.filter_by(ow_id = ID).all()
+
+	@classmethod
+	def update_owner_details(cls, owId, newOwner):
+		if cls.query.filter_by(ow_id = owId).scalar() is not None:
+			new_record = cls.query.filter_by(ow_id = owId).first()
+			new_record.owner_name = newOwner.owner_name
+			new_record.owner_nic  = newOwner.owner_nic
+			new_record.contact_num= newOwner.contact_num
+			new_record.address	  = newOwner.address
+			new_record.area 	  = newOwner.area
+			new_record.service_type = newOwner.service_type
+			new_record.company_name = newOwner.company_name
+			new_record.owner_nic_pic = newOwner.owner_nic_pic
+			new_record.owner_cmp_pic = newOwner.owner_cmp_pic
+			new_record.owner_cmp_registration_doc = newOwner.owner_cmp_registration_doc
+			db.session.commit()
+			return True
+		else:
+			return False
 #endregion
 
 #############################################################################################################
@@ -177,9 +207,11 @@ class DriverModel(db.Model):
 	owner_id 	= db.Column(db.Integer, ForeignKey('owner.ow_id'))
 	license 	= db.Column(db.String(50), nullable=False)
 	driver_nic	= db.Column(db.String(50), nullable=False)
-	prof_pic	= db.Column(db.String(50), nullable=True)
+	prof_pic	= db.Column(db.String(50))
 	contact_num	= db.Column(db.Integer, nullable=False)
 	is_ontrip	= db.Column(db.Boolean, default=False)
+	drivin_license_pic = db.Column(db.String(150))
+	driver_nic_pic = db.Column(db.String(150))
 	created 	= db.Column(db.String(50), default=datetime.now(),nullable=True)
 	updated 	= db.Column(db.String(50), default=datetime.now(),nullable=True)
 
@@ -275,11 +307,20 @@ class VehicleModel(db.Model):
 	owner_id		   = db.Column(db.Integer, ForeignKey('owner.ow_id'))
 	driver_id          = db.Column(db.Integer, ForeignKey('driver.dr_id'))
 	ac_condition       = db.Column(db.Boolean)
-	vehicle_brand      = db.Column(db.String(100), nullable=False)
-	vehicle_type       = db.Column(db.String(100), nullable=False)
+	vehicle_brand      = db.Column(db.String(100))
+	vehicle_type       = db.Column(db.String(100))
 	no_of_passengers   = db.Column(db.Integer)
 	insurance_data     = db.Column(db.String(100), nullable=False)
 	is_ontrip          = db.Column(db.Boolean, default=False)
+
+	vehicle_insu_pic	= db.Column(db.String(150), nullable=False)
+	vehicle_incomdoc_pic = db.Column(db.String(150), nullable=False)
+	vehicle_front_pic= db.Column(db.String(150), nullable=False)
+	vehicle_rear_pic= db.Column(db.String(150), nullable=False)
+	vehicle_inside_pic= db.Column(db.String(150), nullable=False)
+
+
+
 	created 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
 	updated 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
 
@@ -364,6 +405,10 @@ class VehicleModel(db.Model):
 	@classmethod
 	def vehicle_detailsby_id(cls, drId):
 		return cls.query.filter_by(driver_id = drId).all()
+
+	@classmethod
+	def vehicle_detailsby_owner(cls, owId):
+		return cls.query.filter_by(owner_id = owId).all()
 
 #endregion Vehicle Model
 

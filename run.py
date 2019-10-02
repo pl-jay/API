@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, flash
 from flask_restful import Api
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -10,6 +10,7 @@ from flask_restful import Resource
 
 app = Flask(__name__)
 api = Api(app)
+
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///appDB.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -61,6 +62,7 @@ api.add_resource(resources.AllTrips, '/trips')
 api.add_resource(resources.AllTripStatus, '/trip_status')
 api.add_resource(resources.DriversbyOwner, '/drivers/<owId>')
 
+api.add_resource(resources.OwnerDetails, '/owner_details/<owId>')
 
 				# START TRIP #
 api.add_resource(resources.StartTrip, '/starttrip/<tsId>')
@@ -99,6 +101,8 @@ api.add_resource(resources.FinishTrip,'/finishtrip/<tsId>/<drId>')
 api.add_resource(resources.DriverFeedbackbyId, '/get_driver_feedback/<driver_id>')
 					#PASSENGER FEEDBACK#
 api.add_resource(resources.PassengerFeedbackbyId, '/get_passenger_feedback/<ps_id>')
+
+api.add_resource(resources.VehiclesbyOwner, '/get_vehicleby_owner/<owId>')
 
 
 #endregion
@@ -154,6 +158,6 @@ api.add_resource(resources.UserLogoutRefresh, '/logout/refresh')
 
 api.add_resource(resources.TokenRefresh, '/token/refresh')
 
-
+api.add_resource(resources.ImageUpload, '/upload/<ownerId>')
 
 #endregion
