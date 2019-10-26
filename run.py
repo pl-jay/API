@@ -44,7 +44,7 @@ def check_if_token_in_blacklist(decrypted_token):
 
 #endregion
 
-import resources
+from resources import resources
 
 #############################################################################################################
 #                                #----------------------------------#                                       #

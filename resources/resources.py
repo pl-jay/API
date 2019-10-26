@@ -9,13 +9,13 @@ from flask_jwt_extended import (
 
 from werkzeug.utils import secure_filename
 
-from models import (
+from models.models import (
     PassengerModel,OwnerModel,DriverModel,
     VehicleModel,TripPlanModel,TripStatusModel,
     PickupLocationsModel,WaypointsModel,UserModel,
     DriverFeedbackModel,PassengerFeedbackModel,RevokedTokenModel)
 
-from schemas import (
+from models.schemas.schemas import (
     PassengerSchema,OwnerSchema,DriverSchema,
     VehicleSchema,TripPlanSchema,TripStatusSchema,
     PickupLocationSchema,WaypointsSchema,UserSchema,

@@ -5,6 +5,8 @@ from sqlalchemy import Column, Integer, ForeignKey
 from flask import jsonify
 from passlib.hash import pbkdf2_sha256 as sha256
 
+
+
 #############################################################################################################
 #										#----------------#													#
 #										# Passenger Model#												    #
@@ -79,6 +81,10 @@ class PassengerModel(db.Model):
 		else:
 			return False
 #endregion
+
+
+
+
 
 #############################################################################################################
 #												#----------------#											#
