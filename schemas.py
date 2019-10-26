@@ -25,6 +25,7 @@ class OwnerSchema(Schema):
     owner_nic_pic= fields.Str()
     owner_cmp_pic= fields.Str()
     owner_cmp_registration_doc= fields.Str()
+    validated   = fields.Bool()
     created      = fields.Str()
     updated      = fields.Str()
 
@@ -39,6 +40,7 @@ class DriverSchema(Schema):
     prof_pic    = fields.Str()
     drivin_license_pic = fields.Str()
     driver_nic_pic= fields.Str()
+    validated   = fields.Bool()
     contact_num = fields.Number()
     is_ontrip   = fields.Bool()
     created      = fields.Str()
@@ -59,6 +61,7 @@ class VehicleSchema(Schema):
     vehicle_front_pic = fields.Str()
     vehicle_rear_pic = fields.Str()
     vehicle_inside_pic = fields.Str()
+    validated   = fields.Bool()
     is_ontrip          = fields.Bool()
     created      = fields.Str()
     updated      = fields.Str()

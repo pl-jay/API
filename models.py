@@ -102,10 +102,12 @@ class OwnerModel(db.Model):
 	area 		 = db.Column(db.String(50), nullable=False)
 	service_type = db.Column(db.String(60), nullable=False)
 	company_name = db.Column(db.String(100), nullable=False)
+	
 	prof_pic     = db.Column(db.String(100), nullable=True)
 	owner_nic_pic   = db.Column(db.String(150), nullable=True)
 	owner_cmp_pic	= db.Column(db.String(150), nullable=True)
 	owner_cmp_registration_doc	= db.Column(db.String(150), nullable=True)
+	validated	= db.Column(db.Boolean, default=False)
 	created 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
 	updated 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
 
@@ -186,7 +188,21 @@ class OwnerModel(db.Model):
 			return True
 		else:
 			return False
-#endregion
+
+
+	@classmethod
+	def validate_owner(cls, owId):
+		vehicle = cls.query.filter_by(ow_id = vId).first()
+		vehicle.validated = True
+		db.session.commit()
+		return True
+
+
+	@classmethod
+	def return_all_new(cls):
+		return cls.query.filter_by(validated = False).all()
+
+#endregion OWnerModel
 
 #############################################################################################################
 #												#----------------#										    #
@@ -210,8 +226,11 @@ class DriverModel(db.Model):
 	prof_pic	= db.Column(db.String(50))
 	contact_num	= db.Column(db.Integer, nullable=False)
 	is_ontrip	= db.Column(db.Boolean, default=False)
+
 	drivin_license_pic = db.Column(db.String(150))
 	driver_nic_pic = db.Column(db.String(150))
+	validated	= db.Column(db.Boolean, default=False)
+
 	created 	= db.Column(db.String(50), default=datetime.now(),nullable=True)
 	updated 	= db.Column(db.String(50), default=datetime.now(),nullable=True)
 
@@ -289,6 +308,21 @@ class DriverModel(db.Model):
 			return True
 		else:
 			return False
+
+
+
+	@classmethod
+	def validate_driver(cls, drId):
+		vehicle = cls.query.filter_by(dr_id = vId).first()
+		vehicle.validated = True
+		db.session.commit()
+		return True
+
+	@classmethod
+	def return_all_new(cls):
+		return cls.query.filter_by(validated = False).all()
+
+
 #endregion Driver Model
 
 #############################################################################################################
@@ -318,7 +352,7 @@ class VehicleModel(db.Model):
 	vehicle_front_pic= db.Column(db.String(150), nullable=False)
 	vehicle_rear_pic= db.Column(db.String(150), nullable=False)
 	vehicle_inside_pic= db.Column(db.String(150), nullable=False)
-
+	validated	= db.Column(db.Boolean, default=False)
 
 
 	created 	 = db.Column(db.String(50), default=datetime.now(),nullable=True)
@@ -335,6 +369,10 @@ class VehicleModel(db.Model):
 	@classmethod
 	def return_all(cls):
 		return VehicleModel.query.all()
+
+	@classmethod
+	def return_all_new(cls):
+		return cls.query.filter_by(validated = False).all()
 
 	@classmethod
 	def find_by_vehicle_reg_number(cls, vehicle_reg_number):
@@ -410,6 +448,15 @@ class VehicleModel(db.Model):
 	def vehicle_detailsby_owner(cls, owId):
 		return cls.query.filter_by(owner_id = owId).all()
 
+
+
+	@classmethod
+	def validate_vehicle(cls, vId):
+		vehicle = cls.query.filter_by(v_id = vId).first()
+		vehicle.validated = True
+		db.session.commit()
+		return True
+
 #endregion Vehicle Model
 
 #############################################################################################################
@@ -453,8 +500,8 @@ class TripPlanModel(db.Model):
 		return cls.query.all()
 
 	@classmethod
-	def find_by_trip_id(cls, trip_id):
-		return cls.query.filter_by(trip_id = trip_id).all()	
+	def find_by_trip_id(cls, tripId):
+		return cls.query.filter_by(trip_id = tripId).all()	
 
 	@classmethod
 	def findtrip_by_id(cls, tripId):
@@ -592,15 +639,15 @@ class TripStatusModel(db.Model):
 
 	@classmethod
 	def driver_confirmed(cls, tsId):
-		print('OH SHIT IF thats it')
+		
 		if cls.query.filter_by(ts_id =tsId).filter_by(is_confirmed_driver = False).scalar() is not None:
-			print('OH SHIT IF')
+			
 			new_record = cls.query.filter_by(ts_id = tsId).filter_by(is_confirmed_driver = False).first()
 			new_record.is_confirmed_driver = True
 			db.session.commit()
 			return True
 		else:
-			print('OH SHIT else')
+			
 			return False
 
 	@classmethod
@@ -609,13 +656,13 @@ class TripStatusModel(db.Model):
 
 	@classmethod
 	def trips_available_for_driver(cls, drId):
-		print('OH NO')
+		
 		if cls.query.filter_by(assigned_driver = drId).filter_by(is_confirmed_driver = False).filter_by(is_confirmed_passenger = True).scalar() is not None:
 			
-			print('OH NO, ITs IF')
+			
 			return True
 		else:
-			print('OH NO it is ELSE')
+			
 			return False
 
 	@classmethod
@@ -627,50 +674,59 @@ class TripStatusModel(db.Model):
 		return cls.query.filter_by(ts_id = tsId).scalar() is not None
 
 	@classmethod
+	def trip_id_by_owner(cls, owId, confirmed):
+		if confirmed:
+			return cls.query.filter_by(owner_id = owId).filter_by(is_confirmed_passenger = True).all()
+		else:
+			return cls.query.filter_by(owner_id = owId).filter_by(is_confirmed_passenger = False).all()
+
+	@classmethod
 	def set_trip_status(cls,tsId,set_value,unset_value):
 		if set_value:
-			print('inner if shit 1')
+			
 			if cls.query.filter_by(ts_id =tsId) \
 			.filter_by(trip_started = False) \
 			.filter_by(trip_finished = False) \
 			.filter_by(is_confirmed_passenger = True) \
 			.filter_by(is_confirmed_driver = True) \
 			.scalar() is not None:
-				print('outer if')
+				
 				if cls.query.filter_by(ts_id =tsId).filter_by(trip_started = False).filter_by(trip_finished = False).scalar() is not None:
-					print('inner if')
+					
 					new_record = cls.query.filter_by(ts_id = tsId).filter_by(trip_started = False).filter_by(trip_finished = False).first()
 					new_record.trip_started = True
 					db.session.commit()
 					return True
 				else:
-					print('outer shit')
+					
 					return False
 			else:
-				print('outer else 1')
+				
 				return False
 
 		if unset_value:
-			print('inner if shit 2')
+			
 			if cls.query.filter_by(ts_id =tsId) \
 			.filter_by(trip_started = True) \
 			.filter_by(trip_finished = False) \
 			.filter_by(is_confirmed_passenger = True) \
 			.filter_by(is_confirmed_driver = True) \
 			.scalar() is not None:
-				print('outer if2 shit')
+				
 				if cls.query.filter_by(ts_id = tsId).filter_by(trip_started = True).filter_by(trip_finished = False).scalar() is not None:
-					print('inner if')
+					
 					new_record = cls.query.filter_by(ts_id = tsId).filter_by(trip_started = True).filter_by(trip_finished = False).first()
 					new_record.trip_finished = True
 					db.session.commit()
 					return True
 				else:
-					print('outer 2 if')
+					
 					return False
 			else:
-				print('outer 2 else')
+				
 				return False
+
+
 
 #endregion TripStatus Model
 

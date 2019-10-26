@@ -105,6 +105,26 @@ api.add_resource(resources.PassengerFeedbackbyId, '/get_passenger_feedback/<ps_i
 api.add_resource(resources.VehiclesbyOwner, '/get_vehicleby_owner/<owId>')
 
 
+api.add_resource(resources.PassengerConfirmedTrips, '/passengerconfirmedtrips/<owId>')
+
+api.add_resource(resources.TripsBidedbyOwner, '/ownerbidedtrips/<owId>')
+
+
+
+
+api.add_resource(resources.UnvalidatedVehicle, '/newvehicles')
+
+api.add_resource(resources.UnvalidatedDriver, '/newdrivers')
+
+api.add_resource(resources.UnvalidatedOwner, '/newowners')
+
+
+
+
+
+api.add_resource(resources.ValidateItem, '/validate/<item>/<id>')
+
+
 #endregion
 
 #############################################################################################################
@@ -159,5 +179,8 @@ api.add_resource(resources.UserLogoutRefresh, '/logout/refresh')
 api.add_resource(resources.TokenRefresh, '/token/refresh')
 
 api.add_resource(resources.ImageUpload, '/upload/<ownerId>')
+
+
+
 
 #endregion

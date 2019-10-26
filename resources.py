@@ -549,9 +549,8 @@ class SendTripPlanToOwner(Resource):
 
             for item in result:
                 if item['is_ok']:
-                    #trips_detail.append(trips_plan_schema.dump(TripPlanModel().find_by_trip_id(item['trip'])))
                     trips_detail.append(trip_plan_schema.dump(TripPlanModel.findtrip_by_id(item['trip'])))
-            print(trips_detail)
+            
             return trips_detail
         else:
             return {'message':'No trips for you !'}
@@ -592,6 +591,41 @@ class SendTripPlanToOwner(Resource):
 
         return return_data
 
+class PassengerConfirmedTrips(Resource):
+    def get(self, owId):
+        confirmedtrip = trip_status_schema.dump(TripStatusModel.trip_id_by_owner(owId, True))
+
+        c_trip = []
+
+        for trip in confirmedtrip:
+            trip_status = trip['ts_id']
+            trip = trip_plan_schema.dump(TripPlanModel.findtrip_by_id(trip['trip_id']))
+            c_trip.append({
+                'trip_id': trip['trip_id'],
+                'destination': trip['destination'],
+                'pickup_loc': trip['pickup_loc'],
+                'date_from': trip['date_from'],
+                'date_to': trip['date_to'],
+                'no_of_passengers': trip['no_of_passengers'],
+                'ac_condition': trip['ac_condition'],
+                'vehicle_type': trip['vehicle_type'],
+                'trip_status': trip_status
+                })
+
+        return c_trip
+
+class TripsBidedbyOwner(Resource):
+    def get(slef, owId):
+        bidedtrips = trip_status_schema.dump(TripStatusModel.trip_id_by_owner(owId, False))
+
+        b_trip = []
+
+        for trip in bidedtrips:
+            trip = trip_plan_schema.dump(TripPlanModel.findtrip_by_id(trip['trip_id']))
+            b_trip.append(trip)
+
+        return b_trip
+
 #endregion
 
 #############################################################################################################
@@ -628,9 +662,7 @@ class CreateTripStatus(Resource):
 
 class AllTripStatus(Resource):
     def get(self):
-        d1 = TripStatusModel().return_all()
-        print(d1)
-        res = trip_status_schema.dump(d1)
+        res = trip_status_schema.dump(TripStatusModel().return_all())
         return { 'trip_status': res}
 
 class TripStatusById(Resource):
@@ -654,7 +686,10 @@ class TripStatusById(Resource):
                         'budget': ts['trip_budget'],
                         'v_type': vehicle['vehicle_type'],
                         'v_brand': vehicle['vehicle_brand'],
-                        'driver': ts['assigned_driver']
+                        'driver': ts['assigned_driver'],
+                        'v_front': vehicle['vehicle_front_pic'],
+                        'v_rear': vehicle['vehicle_rear_pic'],
+                        'v_in': vehicle['vehicle_inside_pic'],
                         })
         print(bid_details)
         return bid_details
@@ -678,11 +713,12 @@ class AssignDrivers(Resource):
 class SendBudget(Resource):
     def post(self):
         data = request.get_json(force=True)
-
+        
         if not data:
             return {'message':'No data provided'}, 400
 
-        if data['ts_id']:
+        if data['ts_id'] is not None:
+            print('IF')
             if TripStatusModel.find_by_newBudget(data['ts_id'],data['trip_id'],data['owner_id']):
                 
                 TripStatusModel.update_tableforSetBudget(data['ts_id'],data['trip_id'],data['budget'])
@@ -691,16 +727,20 @@ class SendBudget(Resource):
 
                 return {'message':'Trip budget is set','trip_status_id': trip_status_id}
         else:
+            print('ELSE')
             new_entry = TripStatusModel(
                 trip_id     = data['trip_id'],
                 trip_budget = data['budget'],
                 owner_id    = data['owner_id']
                 )
             try:
+                print('try')
+                print(new_entry)
                 new_entry.save_to_db()
                 trip_status_id = TripStatusModel.get_tripstatus_idbyRecord(data['trip_id'],data['owner_id'],data['budget'])
-                return {'message':'Trip budget is assinged','trip_status_id': trip_status_id}
+                return {'trip_status_id': trip_status_id}
             except Exception as e:
+                print(e)
                 return {'message':'Something went wrong', 'error':e}
 
 #endregion
@@ -901,8 +941,33 @@ class ImageUpload(Resource):
             return {'message':'success', 'dir': directory}
 
 
+class ValidateItem(Resource):
+    def get(self, item, id):
+        data = request.get_json(force=True)
+
+        if item == 1:
+            return OwnerModel.validate_owner(id)
+        if item == 2:
+            return DriverModel.validate_driver(id)
+        if item == 3:
+            return VehicleModel.validate_vehicle(id)
 
 
+
+class UnvalidatedVehicle(Resource):
+    def get(self):
+        return vehicle_schema.dump(VehicleModel.return_all_new())
+
+
+class UnvalidatedDriver(Resource):
+    def get(self):
+        return driver_schema.dump(DriverModel.return_all_new())
+
+
+
+class UnvalidatedOwner(Resource):
+    def get(self):
+        return owner_schema.dump(OwnerModel.return_all_new())
 
 
 
